@@ -5,8 +5,6 @@ for i in range(9,19):
     preprocessing.preprocess_pipeline(path) # preprocess_pipeline (after Pozo-Banos) works best for now, others to try out: preprocessing_pipeline1, 2 and 3
 
 
-
-
 # TODO: apply the following
 """
 Data Augmentation (for Training)
