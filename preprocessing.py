@@ -4,6 +4,10 @@ import matplotlib.pyplot as plt
 
 image_path = "./Data/1.Ageratum/Image-9_2024-03-06_grain_0.png"
 
+def convert_to_gray(image: np.ndarray) -> np.ndarray:
+    return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+
 # decorrelation stretching -- doesn't seem to work as intended
 def decorrelation_stretch(img):
     # Reshape image to an MxN = 3 array
@@ -55,6 +59,42 @@ def apply_clahe_on_lab(image):
     return enhanced_image
 
 
+# use Gaussian of laplacian to find edges - no-no for now
+def preprocess_findedges(image_path):
+    image = cv2.imread(image_path)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+    # Resize to 224x224 (common size for deep learning models)
+    image_resized = cv2.resize(image, (224, 224))
+
+    image_gray = cv2.cvtColor(image_resized, cv2.COLOR_BGR2GRAY)
+
+    # Apply Gaussian Blur to reduce noise
+    image_blurred = cv2.GaussianBlur(image_gray, (3, 3), sigmaX=2)
+
+    # Apply Laplacian operator for edge detection
+    laplacian = cv2.Laplacian(image_blurred, cv2.CV_64F, ksize=3)
+    laplacian_abs = np.abs(laplacian)
+
+    # Apply Canny edge detection
+    edges = cv2.Canny(laplacian_abs.astype(np.uint8), threshold1=50, threshold2=100)
+
+    # Visualization
+    fig, ax = plt.subplots(1, 3, figsize=(12, 4))
+    ax = ax.ravel()
+
+    titles = ['Blurred Image', 'Laplacian', 'Canny Edges']
+    images = [image_blurred, laplacian_abs, edges]
+
+    for i in range(3):
+        ax[i].imshow(images[i], cmap='gray')
+        ax[i].set_title(titles[i])
+        ax[i].axis('off')
+
+    plt.tight_layout()
+    plt.show()
+    return edges
+
 
 # best one so far, using the pipeline proposed by M. del Pozo-Banos et al. (M. del Pozo-Baños, et al., Features extraction techniques for pollen grain classification, Neurocomputing (2014), http://dx.doi.org/10.1016/j.neucom.2014.05.085i)
 def preprocess_pipeline(image_path):
@@ -71,6 +111,7 @@ def preprocess_pipeline(image_path):
 
     # Step 5: Binarize the saturation channel
     threshold = 0.75 * 255  # Since OpenCV uses values between 0-255
+    threshold = 0.90 * 255  # Since OpenCV uses values between 0-255
     _, binary_mask = cv2.threshold(equalized_s, threshold, 255, cv2.THRESH_BINARY)
 
     # Step 6: Eliminate noise using morphological operations
@@ -80,6 +121,7 @@ def preprocess_pipeline(image_path):
 
     # Step 7: Apply the mask to the original image
     final_result = cv2.bitwise_and(enhanced_image, enhanced_image, mask=cleaned_mask)
+
 
     # Visualization
     fig, ax = plt.subplots(2, 3, figsize=(12, 8))
@@ -103,6 +145,7 @@ def preprocess_pipeline(image_path):
 
     plt.tight_layout()
     plt.show()
+    return final_result
 
 
 def preprocessing_pipeline1(image_path):
@@ -148,6 +191,7 @@ def preprocessing_pipeline1(image_path):
 
     _, edges2 = cv2.threshold(edges, 100, 255, cv2.THRESH_BINARY)
     removed_background = (255 - image_closed) / 255.0 * edges2
+    removed_background = cv2.bitwise_and(image_resized, image_resized, mask=(255 - image_closed).astype(np.uint8))
 
     # Visualization
     fig, ax = plt.subplots(3, 3, figsize=(12, 12))
@@ -171,6 +215,7 @@ def preprocessing_pipeline1(image_path):
 
     plt.tight_layout()
     plt.show()
+    return removed_background
 
 
 def preprocessing_pipeline2(image_path):

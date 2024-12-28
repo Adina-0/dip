@@ -1,8 +1,22 @@
-import preprocessing
+import preprocessing as pp
+import featureExtraction_structural as fs
+import os
 
-for i in range(9,19):
-    path = f"./Data/1.Ageratum/Image-{i}_2024-03-06_grain_0.png"
-    preprocessing.preprocess_pipeline(path) # preprocess_pipeline (after Pozo-Banos) works best for now, others to try out: preprocessing_pipeline1, 2 and 3
+# path to folder containing pollen images
+img_folder = f"./Data/1.Ageratum/"
+
+# iterate over all images in the folder
+for img_path in os.listdir(img_folder):
+    path = os.path.join(img_folder, img_path)
+    img_preprocessed = pp.preprocessing_pipeline1(path)
+    # img_preprocessed_gray = pp.convert_to_gray(img_preprocessed)
+
+    features = fs.structural_features(img_preprocessed)
+    print(features)
+
+# path = f"./Data/1.Ageratum/Image-9_2024-03-06_grain_0.png"
+# preprocessing.preprocess_pipeline(path) # preprocess_pipeline (after Pozo-Banos) works best for now, others to try out: preprocessing_pipeline1, 2 and 3
+#
 
 
 # TODO: apply the following
