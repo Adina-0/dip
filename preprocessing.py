@@ -145,7 +145,7 @@ def preprocess_pipeline(image_path):
 
     plt.tight_layout()
     plt.show()
-    return final_result
+    return final_result, binary_mask
 
 
 def preprocessing_pipeline1(image_path):
@@ -191,6 +191,12 @@ def preprocessing_pipeline1(image_path):
 
     _, edges2 = cv2.threshold(edges, 100, 255, cv2.THRESH_BINARY)
     removed_background = (255 - image_closed) / 255.0 * edges2
+
+    # find holes in the pollen grains
+
+
+
+
     removed_background = cv2.bitwise_and(image_resized, image_resized, mask=(255 - image_closed).astype(np.uint8))
 
     # Visualization
@@ -213,9 +219,11 @@ def preprocessing_pipeline1(image_path):
         ax[i].set_title(titles[i])
         ax[i].axis('off')
 
+    binary_mask = cv2.bitwise_not(image_closed)
+
     plt.tight_layout()
     plt.show()
-    return removed_background
+    return removed_background, binary_mask
 
 
 def preprocessing_pipeline2(image_path):

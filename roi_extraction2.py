@@ -1,47 +1,60 @@
 import cv2
+import numpy as np
 import matplotlib.pyplot as plt
-import preprocessing as pp
 
-# Load image
-image = cv2.imread('./Data/4. Bougainvillea/Image-296_2024-02-05.jpg')
+# Load the image
+image_path = './Data/4. Bougainvillea/Image-290_2024-02-05.jpg'
+image = cv2.imread(image_path)
 
-enhanced_image = pp.apply_clahe_on_lab(image)
+# Convert to HSV color space
+hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
-# Step 3: Convert to HSV and extract the saturation (S) channel
-hsv_image = cv2.cvtColor(enhanced_image, cv2.COLOR_RGB2HSV)
+# Extract the Saturation channel to emphasize color information
 s_channel = hsv_image[:, :, 1]
 
-# Step 4: Equalize the histogram of the saturation channel
-equalized_s = cv2.equalizeHist(s_channel)
+# Apply Gaussian Blur to reduce noise
+blurred = cv2.GaussianBlur(s_channel, (15, 15), 0)
 
-# Step 5: Binarize the saturation channel
-threshold = 0.2 * 255  # Since OpenCV uses values between 0-255
-_, binary_mask = cv2.threshold(equalized_s, threshold, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C + cv2.THRESH_OTSU)
+# Perform adaptive thresholding
+threshold = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                   cv2.THRESH_BINARY, 11, 2)
+threshold_blurred = cv2.GaussianBlur(threshold, (111, 111), 0)
+threshold2 = cv2.threshold(threshold_blurred, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
 
-# Step 6: Eliminate noise using morphological operations
-kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (27, 27))
-cleaned_mask_close = cv2.morphologyEx(binary_mask, cv2.MORPH_CLOSE, kernel, iterations=1)
-cleaned_mask = cv2.morphologyEx(cleaned_mask_close, cv2.MORPH_OPEN, kernel, iterations=1)
+# Detect contours
+contours, _ = cv2.findContours(threshold2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-# Step 7: Apply the mask to the original image
-final_result = cv2.bitwise_and(enhanced_image, enhanced_image, mask=cleaned_mask)
+# Filter contours by area and circularity
+filtered_contours = []
+for contour in contours:
+    area = cv2.contourArea(contour)
+    perimeter = cv2.arcLength(contour, True)
+    if perimeter == 0:
+        continue
+    circularity = 4 * np.pi * (area / (perimeter ** 2))
+    print(f"Area: {area}, Circularity: {circularity}")
+    if 5000 < area < 50000 and 0 < circularity < 1:
+        filtered_contours.append(contour)
 
-plt.imshow(equalized_s, cmap='gray')
-plt.imshow(final_result)
+# Draw filtered contours on the original image
+output_image = image.copy()
+cv2.drawContours(output_image, filtered_contours, -1, (0, 0, 255), 10)
+
+# Display results
+plt.figure(figsize=(15, 5))
+plt.subplot(1, 3, 1)
+plt.title("Original Image")
+plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+plt.axis("off")
+
+plt.subplot(1, 3, 2)
+plt.title("Thresholded Image")
+plt.imshow(threshold2, cmap='gray')
+plt.axis("off")
+
+plt.subplot(1, 3, 3)
+plt.title("Detected Pollen")
+plt.imshow(cv2.cvtColor(output_image, cv2.COLOR_BGR2RGB))
+plt.axis("off")
+
 plt.show()
-
-# Find contours
-contours, _ = cv2.findContours(equalized_s, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-
-fig, ax = plt.subplots(1, 1, figsize=(10, 10))
-ax.imshow(image, cmap='gray')
-print("Number of contours found:", len(contours))
-
-# Draw and extract ROIs
-for i, contour in enumerate(contours):
-    x, y, w, h = cv2.boundingRect(contour)
-    ax.add_patch(plt.Rectangle((x, y), w, h, edgecolor='red', facecolor='none'))
-
-plt.show()
-

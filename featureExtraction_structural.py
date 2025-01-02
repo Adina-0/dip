@@ -148,9 +148,9 @@ def relative_areas_and_objects(img, thresholds=None):
     for threshold in thresholds:
         # Binarize the image
         _, img_binary = cv2.threshold(img_gray, 255 * threshold, 255, cv2.THRESH_BINARY)
-        cv2.imshow("Binary Image", img_binary)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        # cv2.imshow("Binary Image", img_binary)
+        # cv2.waitKey(0)
+        # cv2.destroyAllWindows()
 
         # Calculate relative area (fraction of pixels with value 1)
         relative_area = np.sum(img_binary) / img_binary.size
