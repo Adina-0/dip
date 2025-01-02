@@ -9,7 +9,6 @@ img_folder = f"./Data/1.Ageratum/"
 features = ()
 X = ()
 
-
 # iterate over all images in the folder
 for img_path in os.listdir(img_folder):
     print(f"\n\nProcessing image: {img_path}")
