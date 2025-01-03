@@ -17,7 +17,7 @@ cfg.MODEL.DEVICE = "cuda" if torch.cuda.is_available() else "cpu"  # Use GPU if 
 predictor = DefaultPredictor(cfg)
 
 # Define the path to input directory
-input_path = "./Data/4. Bougainvillea"
+input_path = "Data2/4. Bougainvillea"
 output_folder = "annotated_outputs"
 os.makedirs(output_folder, exist_ok=True)
 

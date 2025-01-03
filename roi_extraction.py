@@ -6,7 +6,7 @@ import os
 model = YOLO('yolov8n.pt')  # use 'yolov8n.pt' or custom-trained?
 
 # define the path to input directory
-input_path = "./Data/4. Bougainvillea"
+input_path = "Data2/4. Bougainvillea"
 
 # Predict and save annotated results
 results = model(input_path)

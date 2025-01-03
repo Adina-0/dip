@@ -4,10 +4,12 @@
 
 import numpy as np
 import cv2
+import utils
 from scipy.ndimage import label
+from skimage import feature
 
 
-def grey_level_co_occurrence_matrix(img):
+def grey_level_co_occurrence_matrix(img, mask):
     # Define the number of grey levels
     grey_levels = 256
 
@@ -22,7 +24,7 @@ def grey_level_co_occurrence_matrix(img):
     for i in range(rows):
         for j in range(cols):
             # don't consider the background pixels (valued 0)
-            if i + 1 < rows and j + 1 < cols and img_gray[i, j] != 0 and img_gray[i + 1, j + 1] != 0:
+            if i + 1 < rows and j + 1 < cols and mask[i, j] != 0 and mask[i + 1, j + 1] != 0:
                 glcm[img_gray[i, j], img_gray[i + 1, j + 1]] += 1
                 glcm[img_gray[i + 1, j + 1], img_gray[i, j]] += 1
 
@@ -62,7 +64,6 @@ def correlation(glcm):
     return correlation
 
 
-
 def energy(glcm):
     energy = 0
     for i in range(glcm.shape[0]):
@@ -85,7 +86,7 @@ def entropy(image, channels=None):
     """
     if channels is None:
         channels = ['B', 'S', 'V']
-    entropy_values = []
+    entropy_values = {}
 
     for channel in channels:
         # Extract the channel
@@ -112,9 +113,9 @@ def entropy(image, channels=None):
 
         # Compute entropy
         entropy = -np.sum(p * np.log2(p))
-        entropy_values.append(entropy)
+        entropy_values[f"Entropy Channel {channel}"] = entropy
 
-    # Return entropy of all channels as a list
+    # Return entropy of all channels as a dict
     return entropy_values
 
 
@@ -163,9 +164,101 @@ def relative_areas_and_objects(img, thresholds=None):
     return results
 
 
-def structural_features(img):
+def lbp_features(img, radius=3, points=None, method="uniform", mask=None):
+    """
+    Compute Local Binary Pattern (LBP) features of an image.
+
+    Parameters:
+    - img: ndarray
+        Input grayscale image.
+    - radius: int
+        Radius of the circle used for computing LBP (default: 3).
+    - points: int
+        Number of points sampled on the circle (default: 8 * radius).
+    - method: str
+        LBP computation method ('uniform', 'nri_uniform', 'default', etc.).
+    - mask: ndarray (optional)
+        Binary mask to specify the region of interest in the image.
+
+    Returns:
+    - hist: ndarray
+        Normalized histogram of LBP features.
+    """
+    # Ensure the image is grayscale
+    if len(img.shape) == 3:
+        img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    else:
+        img_gray = img
+
+    # Set default number of points
+    if points is None:
+        points = 8 * radius
+
+    # Compute LBP
+    lbp = feature.local_binary_pattern(img_gray, points, radius, method=method)
+
+    # Apply mask if provided
+    if mask is not None:
+        lbp = np.where(mask, lbp, np.nan)  # Masked regions set to NaN
+
+    # Compute histogram, ignoring NaN values
+    hist, _ = np.histogram(
+        lbp[~np.isnan(lbp)],  # Only consider non-NaN values
+        bins=np.arange(0, points + 3),  # Add 2 for the 'uniform' method range
+        range=(0, points + 2)
+    )
+
+    # Normalize histogram
+    hist = hist.astype("float")
+    hist /= (hist.sum() + 1e-7)  # Avoid division by zero
+
+    return hist
+
+
+def gabor_mean(img, mask):
+    # Ensure the image is grayscale
+    if len(img.shape) == 3:
+        img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    else:
+        img_gray = img
+
+    # Create a Gabor kernel
+    gabor_kernel = cv2.getGaborKernel((31, 31), 10, np.pi / 4., 10.0, 0.5, 0, ktype=cv2.CV_32F)
+
+    # Apply the Gabor filter
+    filtered_image = cv2.filter2D(img_gray, cv2.CV_32F, gabor_kernel)
+    filtered_image = np.where(mask, filtered_image, np.nan)  # Masked pixels are set to NaN
+
+    # Calculate the mean, ignoring NaN values
+    gabor_mean = np.nanmean(filtered_image)
+    return gabor_mean
+
+
+def fourier_mean(img, mask):
+    # ensure grayscale
+    if len(img.shape) == 3:
+        img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    else:
+        img_gray = img
+
+    # Fourier-Transform the image
+    f = np.fft.fft2(img_gray)
+    fshift = np.fft.fftshift(f)
+    magnitude_spectrum = np.abs(fshift)
+
+    # Logarithmic scaling (prevents log(0))
+    magnitude_spectrum = np.log1p(magnitude_spectrum)  # log(1 + x), x >= 0
+    magnitude_spectrum = np.where(mask, magnitude_spectrum, np.nan)  # ignore areas outside mask
+
+    # Calculate the mean, ignore NaN values
+    fft_mean = np.nanmean(magnitude_spectrum)
+
+    return fft_mean
+
+
+def structural_features(img, mask):
     # Compute the grey-level co-occurrence matrix
-    glcm = grey_level_co_occurrence_matrix(img)
+    glcm = grey_level_co_occurrence_matrix(img, mask)
 
     contrast_val = contrast(glcm)
     correlation_val = correlation(glcm)
@@ -173,7 +266,17 @@ def structural_features(img):
     entropy_val = entropy(img)
     homogeneity_val = homogeneity(glcm)
     relative_areas_and_objects_val = relative_areas_and_objects(img)
+    gabor_mean_val = gabor_mean(img, mask)
+    fourier_mean_val = fourier_mean(img, mask)
 
+    lpb_hist = lbp_features(img, mask=mask)
+    lpb_descriptors = {**{f"LPB {key}": value for key, value in utils.central_tendency(lpb_hist).items()},
+                       **{f"LPB {key}": value for key, value in utils.dispersion(lpb_hist).items()},
+                       **{f"LPB {key}": value for key, value in utils.distribution_shape(lpb_hist).items()},
+                       **{f"LPB {key}": value for key, value in utils.range_values(lpb_hist).items()},
+                       **{f"LPB {key}": value for key, value in utils.entropy(lpb_hist).items()}}
+
+    # excluded for now: "Relative Areas and Objects": relative_areas_and_objects_val
     return {"Contrast": contrast_val, "Correlation": correlation_val, "Energy": energy_val,
-            "Entropy": entropy_val, "Homogeneity": homogeneity_val, "Relative Areas and Objects": relative_areas_and_objects_val}
-
+            "Homogeneity": homogeneity_val, "Gabor Mean": gabor_mean_val,
+            "Fourier Mean": fourier_mean_val} | entropy_val | lpb_descriptors

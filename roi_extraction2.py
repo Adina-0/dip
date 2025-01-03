@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Load the image
-image_path = './Data/4. Bougainvillea/Image-290_2024-02-05.jpg'
+image_path = 'Data2/4. Bougainvillea/Image-290_2024-02-05.jpg'
 image = cv2.imread(image_path)
 
 # Convert to HSV color space
