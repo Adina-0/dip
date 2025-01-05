@@ -83,7 +83,7 @@ print(descriptor_stats)
 
 fp.analyze_feature_performance(all_data)
 
-# train and evaluate the classification model
+# train and evaluate the classification model -
 num_features = (len(features[0]),)
 model = cf.create_model(num_features, n_classes)
 trained_model, X_val, y_val = cf.train_model(model, features, X, n_classes)

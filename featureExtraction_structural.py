@@ -237,31 +237,85 @@ def gabor_mean(img, mask):
     filtered_image = cv2.filter2D(img_gray, cv2.CV_32F, gabor_kernel)
     filtered_image = np.where(mask, filtered_image, np.nan)  # Masked pixels are set to NaN
 
+    fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+    ax[0].axis("off")
+    ax[1].axis("off")
+    ax[0].imshow(img_gray, cmap="gray")
+    ax[1].imshow(filtered_image, cmap="gray")
+    plt.show()
+
     # Calculate the mean, ignoring NaN values
     gabor_mean = np.nanmean(filtered_image)
     return gabor_mean
 
 
-def fourier_mean(img, mask):
-    # ensure grayscale
-    if len(img.shape) == 3:
-        img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+def fourier_mean(masked_img, mask):
+    # Ensure grayscale
+    if len(masked_img.shape) == 3:
+        img_gray = cv2.cvtColor(masked_img, cv2.COLOR_BGR2GRAY)
     else:
-        img_gray = img
+        img_gray = masked_img
 
-    # Fourier-Transform the image
+    # Apply FFT to the masked image
     f = np.fft.fft2(img_gray)
-    fshift = np.fft.fftshift(f)
-    magnitude_spectrum = np.abs(fshift)
+    f_shift = np.fft.fftshift(f)  # Shift zero-frequency component to the center
+    magnitude_spectrum = 20 * np.log(np.abs(f_shift) + 1)
+    psd_spectrum = np.log(np.abs(f_shift) ** 2 + 1)
 
-    # Logarithmic scaling (prevents log(0))
-    magnitude_spectrum = np.log1p(magnitude_spectrum)  # log(1 + x), x >= 0
-    magnitude_spectrum = np.where(mask, magnitude_spectrum, np.nan)  # ignore areas outside mask
+    # Apply a window (e.g., Gaussian) to reduce artifacts induced by the mask
+    rows, cols = img_gray.shape
+    x, y = np.meshgrid(np.linspace(-1, 1, cols), np.linspace(-1, 1, rows))
+    gaussian_window = np.exp(-(x ** 2 + y ** 2) / 0.5)
+    windowed_mask = mask * gaussian_window
+    windowed_image = img_gray * windowed_mask
+
+    # Perform FFT on the windowed image
+    f_windowed = np.fft.fft2(windowed_image)
+    f_shift_windowed = np.fft.fftshift(f_windowed)
+    magnitude_spectrum_windowed = 20 * np.log(np.abs(f_shift_windowed) + 1)
+    psd_spectrum_windowed = np.log(np.abs(f_shift_windowed) ** 2 + 1)
+
+    # Frequency axis values
+    fx = np.fft.fftshift(np.fft.fftfreq(cols))  # Frequency range for x-axis
+    fy = np.fft.fftshift(np.fft.fftfreq(rows))  # Frequency range for y-axis
+
+    # Plot results
+    plt.figure(figsize=(10, 10))
+
+    # Plot masked image
+    plt.subplot(2, 2, 1)
+    plt.imshow(img_gray, cmap='gray')
+    plt.title('Masked Image')
+    plt.axis('off')  # Remove axis labels
+
+    # Plot PSD spectrum
+    plt.subplot(2, 2, 2)
+    plt.imshow(psd_spectrum, cmap='gray', extent=[fx[0], fx[-1], fy[-1], fy[0]])
+    plt.title('PSD Spectrum of Masked Image')
+    plt.xlabel('Frequency (fx)')
+    plt.ylabel('Frequency (fy)')
+
+    # Plot windowed image
+    plt.subplot(2, 2, 3)
+    plt.imshow(windowed_image, cmap='gray')
+    plt.title('Windowed Masked Image')
+    plt.axis('off')  # Remove axis labels
+
+    # Plot PSD spectrum of windowed image
+    plt.subplot(2, 2, 4)
+    plt.imshow(psd_spectrum_windowed, cmap='gray', extent=[fx[0], fx[-1], fy[-1], fy[0]])
+    plt.title('PSD Spectrum of Windowed Image')
+    plt.xlabel('Frequency (fx)')
+    plt.ylabel('Frequency (fy)')
+
+    plt.tight_layout()
+    plt.show()
 
     # Calculate the mean, ignore NaN values
-    fft_mean = np.nanmean(magnitude_spectrum)
+    fft_mean = np.nanmean(psd_spectrum_windowed)
 
     return fft_mean
+
 
 
 def structural_features(img, mask):

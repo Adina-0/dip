@@ -55,6 +55,7 @@ def analyze_feature_performance(data):
     plt.barh(range(X.shape[1]), importances[indices], align="center")
     plt.yticks(range(X.shape[1]), X.columns[indices])
     plt.xlabel('Relative Importance')
+    plt.tight_layout()
     plt.show()
 
     # Step 5: PCA for Dimensionality Reduction and Visualization
@@ -65,6 +66,7 @@ def analyze_feature_performance(data):
     sns.scatterplot(x=X_pca[:, 0], y=X_pca[:, 1], hue=df['Class'], palette='viridis')
 
     plt.title('PCA of Feature Space')
+    plt.tight_layout()
     plt.show()
 
     # Step 6: Classification Report and Confusion Matrix
