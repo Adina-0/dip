@@ -1,4 +1,6 @@
-import preprocessing as pp
+# Pipeline for pollen image classification
+# Requires: path to the input folders containing pollen data, each folder containing images of a single species
+
 import utils
 import feature_performance as fp
 import pre_processing as ppM
@@ -51,18 +53,13 @@ for class_index, img_folder in enumerate(img_folders):
         # for key, value in features_structure.items():
         #     print(f"\t{key}: {value}")
 
-        # Uncomment below for an alternative set of color descriptors
-        # features_color = fc.calculate_descriptors(img_preprocessed)
-        # for key, value in features_color.items():
-        #     print(f"{key}: {value}")
-
-        features_color2 = fc.color_descriptors(img_preprocessed, binary_mask)
+        features_color = fc.color_descriptors(img_preprocessed, binary_mask)
         # print("\nColor features:")
         # for key, value in features_color2.items():
         #     print(f"\t{key}: {value}")
 
         # Combine structural and color features into a single vector
-        feature_vector = list(features_structure.values()) + list(features_color2.values())
+        feature_vector = list(features_structure.values()) + list(features_color.values())
         flattened_feature_vector = utils.flatten_vector(feature_vector)
 
         # Add the processed feature vector to features
@@ -75,41 +72,22 @@ for class_index, img_folder in enumerate(img_folders):
                 all_data[class_name][descriptor_name] = []
             all_data[class_name][descriptor_name].append(descriptor_value)
 
-        for descriptor_name, descriptor_value in features_color2.items():
+        for descriptor_name, descriptor_value in features_color.items():
             if descriptor_name not in all_data[class_name]:
                 all_data[class_name][descriptor_name] = []
             all_data[class_name][descriptor_name].append(descriptor_value)
 
 
 descriptor_stats = utils.calculate_descriptor_stats(all_data)
-# descriptor_evaluation = desc_eval.evaluate_descriptors(all_data)
-# print("Mutual Information:", descriptor_evaluation['mutual_info'])
+print(descriptor_stats)
 
 fp.analyze_feature_performance(all_data)
 
-
 # train and evaluate the classification model
-# num_features = (len(features[0]),)
-# model = cf.create_model(num_features, n_classes)
-# model = cf.train_model(model, features, X, n_classes)
+num_features = (len(features[0]),)
+model = cf.create_model(num_features, n_classes)
+trained_model, X_val, y_val = cf.train_model(model, features, X, n_classes)
+cf.evaluate_model(trained_model, X_val, y_val)
 
-
-# TODO: apply the following
-"""
-Data Augmentation (for Training)
-Why: Data augmentation helps improve model generalization by artificially increasing the size of the training set.
-How: Apply random transformations like rotation, flipping, zooming, and shifting to the images.
-Example: 
-    from keras.preprocessing.image import ImageDataGenerator
-    datagen = ImageDataGenerator(rotation_range=20, width_shift_range=0.2, height_shift_range=0.2, shear_range=0.2, zoom_range=0.2, horizontal_flip=True)
-    datagen.fit(image_dataset)
-
-Feature Extraction (Optional for Classic ML)
-Why: For traditional machine learning models (e.g., SVM, Random Forest), feature extraction can help convert image data into more manageable representations.
-How: Extract features using techniques like Histogram of Oriented Gradients (HOG), Local Binary Patterns (LBP), or Scale-Invariant Feature Transform (SIFT).
-Example:
-    from skimage.feature import hog
-    features, hog_image = hog(image_equalized, block_norm='L2-Hys', visualize=True)
-"""
 
 

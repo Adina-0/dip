@@ -1,6 +1,5 @@
 import cv2 as cv
 import numpy as np
-from matplotlib import pyplot as plt
 
 def process_image_to_black_background(image_path):
     # Load and preprocess the image

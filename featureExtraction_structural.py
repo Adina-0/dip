@@ -7,6 +7,7 @@ import cv2
 import utils
 from scipy.ndimage import label
 from skimage import feature
+import matplotlib.pyplot as plt
 
 
 def grey_level_co_occurrence_matrix(img, mask):
@@ -164,7 +165,7 @@ def relative_areas_and_objects(img, thresholds=None):
     return results
 
 
-def lbp_features(img, radius=3, points=None, method="uniform", mask=None):
+def lbp_features(img, radius=5, points=None, method="uniform", mask=None):
     """
     Compute Local Binary Pattern (LBP) features of an image.
 
@@ -172,7 +173,7 @@ def lbp_features(img, radius=3, points=None, method="uniform", mask=None):
     - img: ndarray
         Input grayscale image.
     - radius: int
-        Radius of the circle used for computing LBP (default: 3).
+        Radius of the circle used for computing LBP (default: 4).
     - points: int
         Number of points sampled on the circle (default: 8 * radius).
     - method: str
@@ -200,6 +201,13 @@ def lbp_features(img, radius=3, points=None, method="uniform", mask=None):
     # Apply mask if provided
     if mask is not None:
         lbp = np.where(mask, lbp, np.nan)  # Masked regions set to NaN
+
+    # fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+    # ax[0].axis("off")
+    # ax[1].axis("off")
+    # ax[0].imshow(img_gray, cmap="gray")
+    # ax[1].imshow(lbp, cmap="gray")
+    # plt.show()
 
     # Compute histogram, ignoring NaN values
     hist, _ = np.histogram(
@@ -270,11 +278,11 @@ def structural_features(img, mask):
     fourier_mean_val = fourier_mean(img, mask)
 
     lpb_hist = lbp_features(img, mask=mask)
-    lpb_descriptors = {**{f"LPB {key}": value for key, value in utils.central_tendency(lpb_hist).items()},
-                       **{f"LPB {key}": value for key, value in utils.dispersion(lpb_hist).items()},
-                       **{f"LPB {key}": value for key, value in utils.distribution_shape(lpb_hist).items()},
-                       **{f"LPB {key}": value for key, value in utils.range_values(lpb_hist).items()},
-                       **{f"LPB {key}": value for key, value in utils.entropy(lpb_hist).items()}}
+    lpb_descriptors = {**{f"LBP {key}": value for key, value in utils.central_tendency(lpb_hist).items()},
+                       **{f"LBP {key}": value for key, value in utils.dispersion(lpb_hist).items()},
+                       **{f"LBP {key}": value for key, value in utils.distribution_shape(lpb_hist).items()},
+                       **{f"LBP {key}": value for key, value in utils.range_values(lpb_hist).items()},
+                       **{f"LBP {key}": value for key, value in utils.entropy(lpb_hist).items()}}
 
     # excluded for now: "Relative Areas and Objects": relative_areas_and_objects_val
     return {"Contrast": contrast_val, "Correlation": correlation_val, "Energy": energy_val,

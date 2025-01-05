@@ -123,17 +123,17 @@ def color_descriptors(img, mask):
 
     # Results
     return {
-        "mean_intensity": mean_intensity,
-        "intensity_variation": intensity_variation,
-        "mean_R": mean_R,
-        "mean_G": mean_G,
-        "mean_B": mean_B,
-        "mean_brightness": mean_brightness,
-        "brightness_variation": brightness_variation,
-        "mean_density": mean_density,
-        "density_variation": density_variation,
-        "mean_saturation": mean_saturation,
-        "hue_typical": hue_typical,
-        "hue_variation": hue_variation,
+        "Mean Intensity": mean_intensity,
+        "Intensity Variation": intensity_variation,
+        "Mean R": mean_R,
+        "Mean G": mean_G,
+        "Mean B": mean_B,
+        "Mean Brightness": mean_brightness,
+        "Brightness Variation": brightness_variation,
+        "Mean Density": mean_density,
+        "Density Variation": density_variation,
+        "Mean Saturation": mean_saturation,
+        "Typical Hue": hue_typical,
+        "Hue Variation": hue_variation,
     }
 

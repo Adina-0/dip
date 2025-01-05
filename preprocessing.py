@@ -2,7 +2,6 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
-image_path = "./Data/1.Ageratum/Image-9_2024-03-06_grain_0.png"
 
 def convert_to_gray(image: np.ndarray) -> np.ndarray:
     return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -350,9 +349,4 @@ def preprocessing_pipeline3(image_path):
     plt.tight_layout()
     plt.show()
 
-
-
-    """
-    some message
-    """
 
