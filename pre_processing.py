@@ -1,5 +1,27 @@
 import cv2 as cv
 import numpy as np
+import os
+
+
+def pad_image(image, max_dim):
+    """
+    Pads the image to the specified max dimension by extending and smoothing the border pixels.
+    """
+    height, width = image.shape[:2]
+
+    # Calculate padding
+    top = (max_dim - height) // 2
+    bottom = max_dim - height - top
+    left = (max_dim - width) // 2
+    right = max_dim - width - left
+
+    # Apply the padding
+    padded_image = cv.copyMakeBorder(image, top, bottom, left, right, cv.BORDER_CONSTANT, value=(0, 0, 0))
+
+    print(f"Original image shape: {image.shape}")
+    print(f"Padded image shape: {padded_image.shape}")
+    return padded_image
+
 
 def process_image_to_black_background_old(image_path):
     # Load and preprocess the image
@@ -50,7 +72,7 @@ def process_image_to_black_background_old(image_path):
     return background_black, mask
 
 
-def process_image_to_black_background(image_path):
+def process_image_to_black_background(image_path, max_dim):
     # Load and preprocess the image
     img = cv.imread(image_path)
     image = cv.cvtColor(img, cv.COLOR_BGR2RGB)
@@ -114,4 +136,33 @@ def process_image_to_black_background(image_path):
     background_black = masked_image.copy()
     background_black[mask == 0] = 0
 
+    # Pad the output to the maximum dimension
+    background_black = pad_image(background_black, max_dim)
+    mask = pad_image(mask, max_dim)
+    binary_image = pad_image(binary_image, max_dim)
+
+    # Pad the largest contour to the maximum dimension
+    top = (max_dim - height) // 2
+    left = (max_dim - width) // 2
+    largest_contour = largest_contour + np.array([left, top])
+
     return background_black, mask, largest_contour, binary_image
+
+
+def find_global_max_dimension(data_path):
+    max_dim = 0
+    for img_folder in os.listdir(data_path):
+        if img_folder[0] == ".":
+            continue
+        img_folder = os.path.join(data_path, img_folder + "/")
+        for img_path in os.listdir(img_folder):
+            if img_path[0] == ".":
+                continue
+            path = os.path.join(img_folder, img_path)
+            img = cv.imread(path)
+            height, width = img.shape[:2]
+            max_dim = max(max_dim, height, width)
+
+    return max_dim
+
+

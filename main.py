@@ -1,5 +1,6 @@
 # Pipeline for pollen image classification
 # Requires: path to the input folders containing pollen data, each folder containing images of a single species
+import cv2
 
 import utils
 import feature_performance as fp
@@ -9,18 +10,22 @@ import featureExtraction_color as fc
 import featureExtraction_geometrical as fg
 import classification_features as cf
 import os
+import matplotlib.pyplot as plt
 
 # Path to input folders containing pollen training data
 data_path = "./Data/"
+max_dim = ppM.find_global_max_dimension(data_path)
+
 # Paths to folders containing pollen images
 img_folders = os.listdir(data_path)
+n_classes = len(img_folders)
 
 features = ()
 X = ()
-n_classes = len(img_folders)
 
 # Dictionary to store all data
 all_data = {}  # {class_name: {descriptor_name: [values per image]}}
+
 
 for class_index, img_folder in enumerate(img_folders):
     if img_folder[0] == ".":  # Skip hidden files
@@ -46,7 +51,10 @@ for class_index, img_folder in enumerate(img_folders):
         # img_preprocessed, binary_mask = pp.preprocessing_pipeline1(path)
         # img_preprocessed_gray = pp.convert_to_gray(img_preprocessed)
 
-        img_preprocessed, binary_mask, largest_contour, binary_image = ppM.process_image_to_black_background(path)
+        img_preprocessed, binary_mask, largest_contour, binary_image = ppM.process_image_to_black_background(path, max_dim)
+        cv2.imshow("Test", img_preprocessed)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
 
         # Extract structural features
         features_structure = fs.structural_features(img_preprocessed, binary_mask)
@@ -97,6 +105,4 @@ num_features = (len(features[0]),)
 model = cf.create_model(num_features, n_classes)
 trained_model, X_val, y_val = cf.train_model(model, features, X, n_classes)
 cf.evaluate_model(trained_model, X_val, y_val)
-
-
 
