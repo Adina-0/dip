@@ -6,6 +6,7 @@ import feature_performance as fp
 import pre_processing as ppM
 import featureExtraction_structural as fs
 import featureExtraction_color as fc
+import featureExtraction_geometrical as fg
 import classification_features as cf
 import os
 
@@ -45,7 +46,7 @@ for class_index, img_folder in enumerate(img_folders):
         # img_preprocessed, binary_mask = pp.preprocessing_pipeline1(path)
         # img_preprocessed_gray = pp.convert_to_gray(img_preprocessed)
 
-        img_preprocessed, binary_mask = ppM.process_image_to_black_background(path)
+        img_preprocessed, binary_mask, largest_contour, binary_image = ppM.process_image_to_black_background(path)
 
         # Extract structural features
         features_structure = fs.structural_features(img_preprocessed, binary_mask)
@@ -58,8 +59,11 @@ for class_index, img_folder in enumerate(img_folders):
         # for key, value in features_color2.items():
         #     print(f"\t{key}: {value}")
 
-        # Combine structural and color features into a single vector
-        feature_vector = list(features_structure.values()) + list(features_color.values())
+        # Extract geometrical features
+        features_geometric = fg.geometric_features(img_preprocessed, binary_mask, largest_contour, binary_image)
+
+        # Combine structural, color and geometric features into a single vector
+        feature_vector = list(features_structure.values()) + list(features_color.values()) + list(features_geometric.values())
         flattened_feature_vector = utils.flatten_vector(feature_vector)
 
         # Add the processed feature vector to features
@@ -73,6 +77,11 @@ for class_index, img_folder in enumerate(img_folders):
             all_data[class_name][descriptor_name].append(descriptor_value)
 
         for descriptor_name, descriptor_value in features_color.items():
+            if descriptor_name not in all_data[class_name]:
+                all_data[class_name][descriptor_name] = []
+            all_data[class_name][descriptor_name].append(descriptor_value)
+
+        for descriptor_name, descriptor_value in features_geometric.items():
             if descriptor_name not in all_data[class_name]:
                 all_data[class_name][descriptor_name] = []
             all_data[class_name][descriptor_name].append(descriptor_value)

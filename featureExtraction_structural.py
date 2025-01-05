@@ -237,12 +237,12 @@ def gabor_mean(img, mask):
     filtered_image = cv2.filter2D(img_gray, cv2.CV_32F, gabor_kernel)
     filtered_image = np.where(mask, filtered_image, np.nan)  # Masked pixels are set to NaN
 
-    fig, ax = plt.subplots(1, 2, figsize=(12, 6))
-    ax[0].axis("off")
-    ax[1].axis("off")
-    ax[0].imshow(img_gray, cmap="gray")
-    ax[1].imshow(filtered_image, cmap="gray")
-    plt.show()
+    # fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+    # ax[0].axis("off")
+    # ax[1].axis("off")
+    # ax[0].imshow(img_gray, cmap="gray")
+    # ax[1].imshow(filtered_image, cmap="gray")
+    # plt.show()
 
     # Calculate the mean, ignoring NaN values
     gabor_mean = np.nanmean(filtered_image)
@@ -280,36 +280,36 @@ def fourier_mean(masked_img, mask):
     fy = np.fft.fftshift(np.fft.fftfreq(rows))  # Frequency range for y-axis
 
     # Plot results
-    plt.figure(figsize=(10, 10))
+    # plt.figure(figsize=(10, 10))
 
     # Plot masked image
-    plt.subplot(2, 2, 1)
-    plt.imshow(img_gray, cmap='gray')
-    plt.title('Masked Image')
-    plt.axis('off')  # Remove axis labels
+    # plt.subplot(2, 2, 1)
+    # plt.imshow(img_gray, cmap='gray')
+    # plt.title('Masked Image')
+    # plt.axis('off')
 
     # Plot PSD spectrum
-    plt.subplot(2, 2, 2)
-    plt.imshow(psd_spectrum, cmap='gray', extent=[fx[0], fx[-1], fy[-1], fy[0]])
-    plt.title('PSD Spectrum of Masked Image')
-    plt.xlabel('Frequency (fx)')
-    plt.ylabel('Frequency (fy)')
+    # plt.subplot(2, 2, 2)
+    # plt.imshow(psd_spectrum, cmap='gray', extent=[fx[0], fx[-1], fy[-1], fy[0]])
+    # plt.title('PSD Spectrum of Masked Image')
+    # plt.xlabel('Frequency (fx)')
+    # plt.ylabel('Frequency (fy)')
 
-    # Plot windowed image
-    plt.subplot(2, 2, 3)
-    plt.imshow(windowed_image, cmap='gray')
-    plt.title('Windowed Masked Image')
-    plt.axis('off')  # Remove axis labels
+    # # Plot windowed image
+    # plt.subplot(2, 2, 3)
+    # plt.imshow(windowed_image, cmap='gray')
+    # plt.title('Windowed Masked Image')
+    # plt.axis('off')  # Remove axis labels
+    #
+    # # Plot PSD spectrum of windowed image
+    # plt.subplot(2, 2, 4)
+    # plt.imshow(psd_spectrum_windowed, cmap='gray', extent=[fx[0], fx[-1], fy[-1], fy[0]])
+    # plt.title('PSD Spectrum of Windowed Image')
+    # plt.xlabel('Frequency (fx)')
+    # plt.ylabel('Frequency (fy)')
 
-    # Plot PSD spectrum of windowed image
-    plt.subplot(2, 2, 4)
-    plt.imshow(psd_spectrum_windowed, cmap='gray', extent=[fx[0], fx[-1], fy[-1], fy[0]])
-    plt.title('PSD Spectrum of Windowed Image')
-    plt.xlabel('Frequency (fx)')
-    plt.ylabel('Frequency (fy)')
-
-    plt.tight_layout()
-    plt.show()
+    # plt.tight_layout()
+    # plt.show()
 
     # Calculate the mean, ignore NaN values
     fft_mean = np.nanmean(psd_spectrum_windowed)
