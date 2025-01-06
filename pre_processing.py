@@ -17,9 +17,6 @@ def pad_image(image, max_dim):
 
     # Apply the padding
     padded_image = cv.copyMakeBorder(image, top, bottom, left, right, cv.BORDER_CONSTANT, value=(0, 0, 0))
-
-    print(f"Original image shape: {image.shape}")
-    print(f"Padded image shape: {padded_image.shape}")
     return padded_image
 
 
@@ -72,7 +69,7 @@ def process_image_to_black_background_old(image_path):
     return background_black, mask
 
 
-def process_image_to_black_background(image_path, max_dim):
+def process_image_to_black_background(image_path, max_dim, pad=False):
     # Load and preprocess the image
     img = cv.imread(image_path)
     image = cv.cvtColor(img, cv.COLOR_BGR2RGB)
@@ -135,6 +132,9 @@ def process_image_to_black_background(image_path, max_dim):
     # Turn the background black
     background_black = masked_image.copy()
     background_black[mask == 0] = 0
+
+    if not pad:
+        return background_black, mask, largest_contour, binary_image
 
     # Pad the output to the maximum dimension
     background_black = pad_image(background_black, max_dim)

@@ -10,27 +10,34 @@ from skimage import feature
 import matplotlib.pyplot as plt
 
 
-def grey_level_co_occurrence_matrix(img, mask):
-    # Define the number of grey levels
-    grey_levels = 256
+import numpy as np
+import cv2
 
-    # Define the co-occurrence matrix
-    glcm = np.zeros((grey_levels, grey_levels))
+def grey_level_co_occurrence_matrix(img, mask, grey_levels=128):
+    # Convert the image to grayscale
+    if len(img.shape) == 3:
+        img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    else:
+        img_gray = img
 
-    img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    # Define the number of rows and columns in the image
-    rows, cols = img_gray.shape
+    # Scale the image to the specified grey levels
+    img_scaled = (img_gray * (grey_levels - 1) / 255).astype(np.uint8)
 
-    # compute the co-occurrence matrix
-    for i in range(rows):
-        for j in range(cols):
-            # don't consider the background pixels (valued 0)
-            if i + 1 < rows and j + 1 < cols and mask[i, j] != 0 and mask[i + 1, j + 1] != 0:
-                glcm[img_gray[i, j], img_gray[i + 1, j + 1]] += 1
-                glcm[img_gray[i + 1, j + 1], img_gray[i, j]] += 1
+    # Mask the image to exclude background pixels
+    valid_mask = (mask[:-1, :-1] != 0) & (mask[1:, 1:] != 0)
+    row_vals = img_scaled[:-1, :-1][valid_mask]
+    col_vals = img_scaled[1:, 1:][valid_mask]
+
+    # Initialize the co-occurrence matrix
+    glcm = np.zeros((grey_levels, grey_levels), dtype=np.float64)
+
+    # Use NumPy's advanced indexing to calculate the co-occurrence matrix
+    for row, col in zip(row_vals, col_vals):
+        glcm[row, col] += 1
 
     # Normalize the co-occurrence matrix
-    glcm = glcm / np.sum(glcm)
+    if glcm.sum() > 0:
+        glcm /= glcm.sum()
 
     return glcm
 
@@ -150,9 +157,6 @@ def relative_areas_and_objects(img, thresholds=None):
     for threshold in thresholds:
         # Binarize the image
         _, img_binary = cv2.threshold(img_gray, 255 * threshold, 255, cv2.THRESH_BINARY)
-        # cv2.imshow("Binary Image", img_binary)
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
 
         # Calculate relative area (fraction of pixels with value 1)
         relative_area = np.sum(img_binary) / img_binary.size
@@ -165,7 +169,7 @@ def relative_areas_and_objects(img, thresholds=None):
     return results
 
 
-def lbp_features(img, radius=5, points=None, method="uniform", mask=None):
+def lbp_features(img, radius=5, points=None, method="uniform", mask=None, plot=False):
     """
     Compute Local Binary Pattern (LBP) features of an image.
 
@@ -202,12 +206,13 @@ def lbp_features(img, radius=5, points=None, method="uniform", mask=None):
     if mask is not None:
         lbp = np.where(mask, lbp, np.nan)  # Masked regions set to NaN
 
-    # fig, ax = plt.subplots(1, 2, figsize=(12, 6))
-    # ax[0].axis("off")
-    # ax[1].axis("off")
-    # ax[0].imshow(img_gray, cmap="gray")
-    # ax[1].imshow(lbp, cmap="gray")
-    # plt.show()
+    if plot is True:
+        fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+        ax[0].axis("off")
+        ax[1].axis("off")
+        ax[0].imshow(img_gray, cmap="gray")
+        ax[1].imshow(lbp, cmap="gray")
+        plt.show()
 
     # Compute histogram, ignoring NaN values
     hist, _ = np.histogram(
@@ -223,7 +228,7 @@ def lbp_features(img, radius=5, points=None, method="uniform", mask=None):
     return hist
 
 
-def gabor_mean(img, mask):
+def gabor_mean(img, mask, plot=False):
     # Ensure the image is grayscale
     if len(img.shape) == 3:
         img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -237,79 +242,49 @@ def gabor_mean(img, mask):
     filtered_image = cv2.filter2D(img_gray, cv2.CV_32F, gabor_kernel)
     filtered_image = np.where(mask, filtered_image, np.nan)  # Masked pixels are set to NaN
 
-    # fig, ax = plt.subplots(1, 2, figsize=(12, 6))
-    # ax[0].axis("off")
-    # ax[1].axis("off")
-    # ax[0].imshow(img_gray, cmap="gray")
-    # ax[1].imshow(filtered_image, cmap="gray")
-    # plt.show()
+    if plot is True:
+        fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+        ax[0].axis("off")
+        ax[1].axis("off")
+        ax[0].imshow(img_gray, cmap="gray")
+        ax[1].imshow(filtered_image, cmap="gray")
+        plt.show()
 
     # Calculate the mean, ignoring NaN values
     gabor_mean = np.nanmean(filtered_image)
     return gabor_mean
 
 
-def fourier_mean(masked_img, mask):
-    # Ensure grayscale
-    if len(masked_img.shape) == 3:
+def fourier_mean(masked_img, mask, plot=False):
+    # Ensure the input is grayscale
+    if masked_img.ndim == 3:
         img_gray = cv2.cvtColor(masked_img, cv2.COLOR_BGR2GRAY)
     else:
         img_gray = masked_img
 
-    # Apply FFT to the masked image
-    f = np.fft.fft2(img_gray)
-    f_shift = np.fft.fftshift(f)  # Shift zero-frequency component to the center
-    magnitude_spectrum = 20 * np.log(np.abs(f_shift) + 1)
-    psd_spectrum = np.log(np.abs(f_shift) ** 2 + 1)
-
-    # Apply a window (e.g., Gaussian) to reduce artifacts induced by the mask
+    # Apply a Gaussian window to reduce edge artifacts
     rows, cols = img_gray.shape
-    x, y = np.meshgrid(np.linspace(-1, 1, cols), np.linspace(-1, 1, rows))
-    gaussian_window = np.exp(-(x ** 2 + y ** 2) / 0.5)
-    windowed_mask = mask * gaussian_window
-    windowed_image = img_gray * windowed_mask
+    x, y = np.meshgrid(
+        np.linspace(-1, 1, cols), np.linspace(-1, 1, rows), indexing="xy"
+    )
+    gaussian_window = np.exp(-(x ** 2 + y ** 2) / 0.1)
+    windowed_image = img_gray * mask * gaussian_window
+
+    # Perform FFT on the masked image
+    f_shift = np.fft.fftshift(np.fft.fft2(img_gray))  # Shift zero-frequency component to the center
+    psd_spectrum = np.log(np.abs(f_shift) ** 2)
 
     # Perform FFT on the windowed image
-    f_windowed = np.fft.fft2(windowed_image)
-    f_shift_windowed = np.fft.fftshift(f_windowed)
-    magnitude_spectrum_windowed = 20 * np.log(np.abs(f_shift_windowed) + 1)
-    psd_spectrum_windowed = np.log(np.abs(f_shift_windowed) ** 2 + 1)
+    f_windowed = np.fft.fftshift(np.fft.fft2(windowed_image))
+    psd_spectrum_windowed = np.log1p(np.abs(f_windowed) ** 2)
 
     # Frequency axis values
     fx = np.fft.fftshift(np.fft.fftfreq(cols))  # Frequency range for x-axis
     fy = np.fft.fftshift(np.fft.fftfreq(rows))  # Frequency range for y-axis
 
     # Plot results
-    # plt.figure(figsize=(10, 10))
-
-    # Plot masked image
-    # plt.subplot(2, 2, 1)
-    # plt.imshow(img_gray, cmap='gray')
-    # plt.title('Masked Image')
-    # plt.axis('off')
-
-    # Plot PSD spectrum
-    # plt.subplot(2, 2, 2)
-    # plt.imshow(psd_spectrum, cmap='gray', extent=[fx[0], fx[-1], fy[-1], fy[0]])
-    # plt.title('PSD Spectrum of Masked Image')
-    # plt.xlabel('Frequency (fx)')
-    # plt.ylabel('Frequency (fy)')
-
-    # # Plot windowed image
-    # plt.subplot(2, 2, 3)
-    # plt.imshow(windowed_image, cmap='gray')
-    # plt.title('Windowed Masked Image')
-    # plt.axis('off')  # Remove axis labels
-    #
-    # # Plot PSD spectrum of windowed image
-    # plt.subplot(2, 2, 4)
-    # plt.imshow(psd_spectrum_windowed, cmap='gray', extent=[fx[0], fx[-1], fy[-1], fy[0]])
-    # plt.title('PSD Spectrum of Windowed Image')
-    # plt.xlabel('Frequency (fx)')
-    # plt.ylabel('Frequency (fy)')
-
-    # plt.tight_layout()
-    # plt.show()
+    if plot is True:
+        plot_fourier(img_gray, windowed_image, psd_spectrum, psd_spectrum_windowed, fx, fy)
 
     # Calculate the mean, ignore NaN values
     fft_mean = np.nanmean(psd_spectrum_windowed)
@@ -318,9 +293,19 @@ def fourier_mean(masked_img, mask):
 
 
 
-def structural_features(img, mask):
+def structural_features(img, mask, plot_bool=False):
+
+    grayscale = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    enhanced = cv2.equalizeHist(grayscale)
+    denoised = cv2.GaussianBlur(enhanced, (5, 5), 0)
+
+    if plot_bool:
+        cv2.imshow("denoised", denoised)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
     # Compute the grey-level co-occurrence matrix
-    glcm = grey_level_co_occurrence_matrix(img, mask)
+    glcm = grey_level_co_occurrence_matrix(denoised, mask)
 
     contrast_val = contrast(glcm)
     correlation_val = correlation(glcm)
@@ -328,10 +313,11 @@ def structural_features(img, mask):
     entropy_val = entropy(img)
     homogeneity_val = homogeneity(glcm)
     relative_areas_and_objects_val = relative_areas_and_objects(img)
-    gabor_mean_val = gabor_mean(img, mask)
-    fourier_mean_val = fourier_mean(img, mask)
 
-    lpb_hist = lbp_features(img, mask=mask)
+    gabor_mean_val = gabor_mean(img, mask, plot=plot_bool)
+    fourier_mean_val = fourier_mean(img, mask, plot=plot_bool)
+
+    lpb_hist = lbp_features(img, mask=mask, plot=plot_bool)
     lpb_descriptors = {**{f"LBP {key}": value for key, value in utils.central_tendency(lpb_hist).items()},
                        **{f"LBP {key}": value for key, value in utils.dispersion(lpb_hist).items()},
                        **{f"LBP {key}": value for key, value in utils.distribution_shape(lpb_hist).items()},
@@ -342,3 +328,37 @@ def structural_features(img, mask):
     return {"Contrast": contrast_val, "Correlation": correlation_val, "Energy": energy_val,
             "Homogeneity": homogeneity_val, "Gabor Mean": gabor_mean_val,
             "Fourier Mean": fourier_mean_val} | entropy_val | lpb_descriptors
+
+
+
+def plot_fourier(img_gray, windowed_image, psd_spectrum, psd_spectrum_windowed, fx, fy):
+    plt.figure(figsize=(10, 10))
+
+    # Plot masked image
+    plt.subplot(2, 2, 1)
+    plt.imshow(img_gray, cmap='gray')
+    plt.title('Masked Image')
+    plt.axis('off')
+
+    # Plot PSD spectrum
+    plt.subplot(2, 2, 2)
+    plt.imshow(psd_spectrum, cmap='gray', extent=[fx[0], fx[-1], fy[-1], fy[0]])
+    plt.title('PSD Spectrum of Masked Image')
+    plt.xlabel('Frequency (fx)')
+    plt.ylabel('Frequency (fy)')
+
+    # Plot windowed image
+    plt.subplot(2, 2, 3)
+    plt.imshow(windowed_image, cmap='gray')
+    plt.title('Windowed Masked Image')
+    plt.axis('off')  # Remove axis labels
+
+    # Plot PSD spectrum of windowed image
+    plt.subplot(2, 2, 4)
+    plt.imshow(psd_spectrum_windowed, cmap='gray', extent=[fx[0], fx[-1], fy[-1], fy[0]])
+    plt.title('PSD Spectrum of Windowed Image')
+    plt.xlabel('Frequency (fx)')
+    plt.ylabel('Frequency (fy)')
+
+    plt.tight_layout()
+    plt.show()
