@@ -19,9 +19,9 @@ warnings.filterwarnings("ignore", category=RuntimeWarning, message=".*invalid va
 begin = time.time()
 
 # Path to input folders containing pollen training data
-data_path = "./All Data/"
-output_allFeatures = "./Results/allFeatures_pad_newest.csv"
-output_featureStats = "./Results/featureStats_pad_newest.csv"
+data_path = "./Data_short/"
+output_allFeatures = "./Results/allFeatures_test.csv"
+output_featureStats = "./Results/featureStats_test.csv"
 plot_bool = False
 pad_bool = True
 
@@ -71,12 +71,12 @@ for class_index, img_folder in enumerate(img_folders):
         features_color = fc.color_descriptors(img_preprocessed, binary_mask)
         features_geometric = fg.geometric_features(img_preprocessed, binary_mask, largest_contour, binary_image)
 
-        # Combine structural, color and geometric features into a single vector for CNN
-        feature_vector = list(features_structure.values()) + list(features_color.values()) + list(features_geometric.values())
-        flattened_feature_vector = utils.flatten_vector(feature_vector)
-        # Add the processed feature vector to features
-        features += (flattened_feature_vector,)
-        X += (class_index,)
+        # # Combine structural, color and geometric features into a single vector for CNN
+        # feature_vector = list(features_structure.values()) + list(features_color.values()) + list(features_geometric.values())
+        # flattened_feature_vector = utils.flatten_vector(feature_vector)
+        # # Add the processed feature vector to features
+        # features += (flattened_feature_vector,)
+        # X += (class_index,)
 
         feature_dict = {**features_structure, **features_color, **features_geometric}
 
@@ -108,9 +108,9 @@ fp.analyze_feature_performance(df_allData) # Classify using Random Forest
 end = time.time()
 print(f"Total time: {end - begin:.2f} seconds = {(end - begin) / 60:.2f} minutes")
 
-# train and evaluate the classification model -
-num_features = (len(features[0]),)
-model = cf.create_model(num_features, n_classes)
-trained_model, X_val, y_val = cf.train_model(model, features, X, n_classes)
-cf.evaluate_model(trained_model, X_val, y_val)
+# # train and evaluate the classification model -
+# num_features = (len(features[0]),)
+# model = cf.create_model(num_features, n_classes)
+# trained_model, X_val, y_val = cf.train_model(model, features, X, n_classes)
+# cf.evaluate_model(trained_model, X_val, y_val)
 

@@ -81,12 +81,13 @@ def energy(glcm):
     return energy
 
 
-def entropy(image, channels=None):
+def entropy(image, mask=None, channels=None):
     """
-    Calculate entropy for specific channels of an image.
+    Calculate entropy for specific channels of an image, considering a mask.
 
     Parameters:
     image (ndarray): Input image in BGR format.
+    mask (ndarray): Binary mask to specify the region of interest (same dimensions as the image).
     channels (list): List of channels to use ('B', 'S', 'V').
 
     Returns:
@@ -108,6 +109,10 @@ def entropy(image, channels=None):
                 selected_channel = hsv_image[:, :, 2]
         else:
             raise ValueError("Invalid channel. Use 'B', 'S', or 'V'.")
+
+        # Apply mask
+        if mask is not None:
+            selected_channel = selected_channel[mask > 0]
 
         # Calculate histogram counts
         hist = cv2.calcHist([selected_channel], [0], None, [256], [0, 256])
@@ -141,7 +146,7 @@ def relative_areas_and_objects(img, thresholds=None):
     Calculate relative areas and relative objects for an image at given thresholds.
 
     Parameters:
-    image (ndarray): color image in BGR format.
+    image (ndarray): color image in gray scale.
     thresholds (list): List of threshold values.
 
     Returns:
@@ -151,12 +156,12 @@ def relative_areas_and_objects(img, thresholds=None):
         thresholds = [0.1, 0.2, 0.3, 0.4, 0.5]
     results = {}
 
-    img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    img_gray = cv2.GaussianBlur(img_gray, (5, 5), 0)
+    # img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    # img_gray = cv2.GaussianBlur(img_gray, (5, 5), 0)
 
     for threshold in thresholds:
         # Binarize the image
-        _, img_binary = cv2.threshold(img_gray, 255 * threshold, 255, cv2.THRESH_BINARY)
+        _, img_binary = cv2.threshold(img, 255 * threshold, 255, cv2.THRESH_BINARY)
 
         # Calculate relative area (fraction of pixels with value 1)
         relative_area = np.sum(img_binary) / img_binary.size
@@ -300,24 +305,21 @@ def structural_features(img, mask, plot_bool=False):
     denoised = cv2.GaussianBlur(enhanced, (5, 5), 0)
 
     if plot_bool:
-        cv2.imshow("denoised", denoised)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
-
+        plot_preprocessing(grayscale, enhanced, denoised)
     # Compute the grey-level co-occurrence matrix
     glcm = grey_level_co_occurrence_matrix(denoised, mask)
 
     contrast_val = contrast(glcm)
     correlation_val = correlation(glcm)
     energy_val = energy(glcm)
-    entropy_val = entropy(img)
+    entropy_val = entropy(img, mask)
     homogeneity_val = homogeneity(glcm)
-    relative_areas_and_objects_val = relative_areas_and_objects(img)
+    relative_areas_and_objects_val = relative_areas_and_objects(denoised)
 
-    gabor_mean_val = gabor_mean(img, mask, plot=plot_bool)
-    fourier_mean_val = fourier_mean(img, mask, plot=plot_bool)
+    gabor_mean_val = gabor_mean(denoised, mask, plot=plot_bool)
+    fourier_mean_val = fourier_mean(denoised, mask, plot=plot_bool)
 
-    lpb_hist = lbp_features(img, mask=mask, plot=plot_bool)
+    lpb_hist = lbp_features(denoised, mask=mask, plot=plot_bool)
     lpb_descriptors = {**{f"LBP {key}": value for key, value in utils.central_tendency(lpb_hist).items()},
                        **{f"LBP {key}": value for key, value in utils.dispersion(lpb_hist).items()},
                        **{f"LBP {key}": value for key, value in utils.distribution_shape(lpb_hist).items()},
@@ -359,6 +361,28 @@ def plot_fourier(img_gray, windowed_image, psd_spectrum, psd_spectrum_windowed, 
     plt.title('PSD Spectrum of Windowed Image')
     plt.xlabel('Frequency (fx)')
     plt.ylabel('Frequency (fy)')
+
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_preprocessing(grayscale, enhanced, denoised):
+    plt.figure(figsize=(12, 4))
+
+    plt.subplot(1, 3, 1)
+    plt.imshow(grayscale, cmap='gray')
+    plt.title('Grayscale Image')
+    plt.axis('off')
+
+    plt.subplot(1, 3, 2)
+    plt.imshow(enhanced, cmap='gray')
+    plt.title('Enhanced Image')
+    plt.axis('off')
+
+    plt.subplot(1, 3, 3)
+    plt.imshow(denoised, cmap='gray')
+    plt.title('Denoised Image')
+    plt.axis('off')
 
     plt.tight_layout()
     plt.show()
