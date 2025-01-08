@@ -69,7 +69,7 @@ def process_image_to_black_background_old(image_path):
     return background_black, mask
 
 
-def process_image_to_black_background(image_path, max_dim, pad=False):
+def process_image_to_black_background(image_path, max_dim=None, pad=False):
     # Load and preprocess the image
     img = cv.imread(image_path)
     image = cv.cvtColor(img, cv.COLOR_BGR2RGB)
@@ -77,6 +77,9 @@ def process_image_to_black_background(image_path, max_dim, pad=False):
     img_blackBackgound = img.copy()
     mean_values = np.mean(image, axis=(0, 1))
     height, width = image.shape[:2]
+
+    if max_dim is None:
+        max_dim = max(height, width)
 
     # Create a blob from the image
     blob = cv.dnn.blobFromImage(image, scalefactor=1, size=(width, height),

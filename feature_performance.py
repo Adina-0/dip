@@ -7,9 +7,10 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.decomposition import PCA
+from joblib import dump, load
 
 
-def analyze_feature_performance(data):
+def analyze_feature_performance(data, model_output_path: str = None):
     # # Convert nested dictionary into DataFrame
     # flat_data = []
     # labels = []
@@ -25,11 +26,11 @@ def analyze_feature_performance(data):
 
     df = data.copy()
 
-    # Step 2: Encode Class Labels
+    # Encode Class Labels
     le = LabelEncoder()
     df['Class_encoded'] = le.fit_transform(data['Class'])
 
-    # Step 3: Correlation Matrix
+    # Correlation Matrix
     correlation_matrix = df.drop(columns=['Class', 'Class_encoded']).corr()
     plt.figure(figsize=(10, 8))
     sns.heatmap(correlation_matrix, annot=False, cmap='coolwarm', fmt='.2f')
@@ -37,7 +38,7 @@ def analyze_feature_performance(data):
     plt.tight_layout()
     plt.show()
 
-    # Step 4: Train a RandomForestClassifier to Evaluate Feature Importance
+    # Train a RandomForestClassifier to Evaluate Feature Importance
     X = df.drop(columns=['Class', 'Class_encoded'])
     y = df['Class_encoded']
 
@@ -45,7 +46,7 @@ def analyze_feature_performance(data):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
     # Train the classifier
-    rf = RandomForestClassifier(n_estimators=100, random_state=42)
+    rf = RandomForestClassifier(n_estimators=100, random_state=42, class_weight='balanced') # class_weight = 'balanced' to handle different sample sizes
     rf.fit(X_train, y_train)
 
     # Feature importance
@@ -61,7 +62,7 @@ def analyze_feature_performance(data):
     plt.tight_layout()
     plt.show()
 
-    # Step 5: PCA for Dimensionality Reduction and Visualization
+    # PCA for Dimensionality Reduction and Visualization
     pca = PCA(n_components=2)
 
     # drop NaN values
@@ -70,7 +71,6 @@ def analyze_feature_performance(data):
     df = df.drop(nan_indexes)
 
     X_pca = pca.fit_transform(X)
-    print(X_pca)
 
     plt.figure(figsize=(10, 8))
     sns.scatterplot(x=X_pca[:, 0], y=X_pca[:, 1], hue=df['Class'], palette='viridis')
@@ -79,7 +79,6 @@ def analyze_feature_performance(data):
     plt.tight_layout()
     plt.show()
 
-    # Step 6: Classification Report and Confusion Matrix
     y_pred = rf.predict(X_test)
 
     # Classification report
@@ -88,18 +87,25 @@ def analyze_feature_performance(data):
     # Confusion matrix
     conf_matrix = confusion_matrix(y_test, y_pred)
     plt.figure(figsize=(8, 6))
-    sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', xticklabels=le.classes_, yticklabels=le.classes_)
+    sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', xticklabels=le.classes_,
+                yticklabels=le.classes_)
     plt.title('Confusion Matrix')
     plt.xlabel('Predicted')
     plt.ylabel('True')
     plt.tight_layout()
     plt.show()
 
-# #path to csv
-# path = "./Results/allFeatures_new.csv"
-# data = pd.read_csv(path)
-# data.set_index('Image', inplace=True)
-# data = data[['Class', 'Contrast', 'Correlation', 'Energy', 'Homogeneity', 'Gabor Mean', 'Fourier Mean', 'Entropy Channel B', 'Entropy Channel S', 'Entropy Channel V', 'LBP Mean', 'LBP Median', 'LBP Mode', 'LBP Standard Deviation', 'LBP IQR', 'LBP Skewness', 'LBP Kurtosis', 'LBP Minimum', 'LBP Maximum', 'LBP Entropy']]
-# data = data[['Class', 'Mean Intensity', 'Intensity Variation', 'Mean R', 'Mean G', 'Mean B', 'Mean Brightness', 'Brightness Variation', 'Mean Density', 'Density Variation', 'Mean Saturation', 'Typical Hue', 'Hue Variation']]
-# data = data['Area', 'Extent', 'Aspect Ratio', 'Major Axis Length', 'Minor Axis Length', 'Eccentricity', 'Convex Area', 'Equivalent Diameter', 'Solidity', 'Perimeter', 'Circularity', 'Thickness']]
-# analyze_feature_performance(data)
+    # save trained model to system if path is given
+    if model_output_path:
+        metadata = {
+            'features': X_train.columns.tolist(),  # Save feature names
+            'label_classes': le.classes_.tolist()  # Save label classes
+        }
+        dump(rf, model_output_path+'_model.joblib')
+        dump(le, model_output_path + '_label-encoder.joblib')
+        dump(metadata, model_output_path+'_metadata.joblib')
+
+    return rf
+
+
+

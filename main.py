@@ -13,17 +13,30 @@ import classification_features as cf
 import os
 import warnings
 
-# Suppress the specific runtime warning (saturation index)
-warnings.filterwarnings("ignore", category=RuntimeWarning, message=".*invalid value encountered in divide.*")
-
-begin = time.time()
-
 # Path to input folders containing pollen training data
-data_path = "./Data_short/"
-output_allFeatures = "./Results/allFeatures_test.csv"
-output_featureStats = "./Results/featureStats_test.csv"
+data_path = "./All Data/"
+output_identifier = "20250109"
+
+# Features to include
+include_color = False
+include_geometry = False
+include_structure = True
+
+############################################################################
+# Output paths, set to None if no storage is needed
+output_allFeatures = f"./Results/{output_identifier}_allFeatures.csv"
+output_featureStats = f"./Results/{output_identifier}_featureStats.csv"
+output_model = f"./Results/{output_identifier}_RF"  # creates two files: '{output_model}_model.joblib' and '{output_model}_feature-names.joblib'
+
+# Flags for plotting and padding
 plot_bool = False
 pad_bool = True
+
+############################################################################
+
+# Suppress the specific runtime warning (saturation index)
+warnings.filterwarnings("ignore", category=RuntimeWarning, message=".*invalid value encountered in divide.*")
+begin = time.time()
 
 print("Find global max dim")
 max_dim = ppM.find_global_max_dimension(data_path)
@@ -67,9 +80,16 @@ for class_index, img_folder in enumerate(img_folders):
         # cv2.destroyAllWindows()
 
         # Extract features
-        features_structure = fs.structural_features(img_preprocessed, binary_mask, plot_bool=plot_bool)
-        features_color = fc.color_descriptors(img_preprocessed, binary_mask)
-        features_geometric = fg.geometric_features(img_preprocessed, binary_mask, largest_contour, binary_image)
+        features_structure = {}
+        features_geometric = {}
+        features_color = {}
+
+        if include_structure:
+            features_structure = fs.structural_features(img_preprocessed, binary_mask, plot_bool=plot_bool)
+        if include_color:
+            features_color = fc.color_descriptors(img_preprocessed, binary_mask)
+        if include_geometry:
+            features_geometric = fg.geometric_features(img_preprocessed, binary_mask, largest_contour, binary_image)
 
         # # Combine structural, color and geometric features into a single vector for CNN
         # feature_vector = list(features_structure.values()) + list(features_color.values()) + list(features_geometric.values())
@@ -103,14 +123,17 @@ descriptor_stats = utils.calculate_descriptor_stats(all_data)
 utils.write_csv_stats(descriptor_stats, output_featureStats)
 
 df_allData.to_csv(output_allFeatures) # Write all features to a CSV file
-fp.analyze_feature_performance(df_allData) # Classify using Random Forest
+rf = fp.analyze_feature_performance(df_allData, output_model) # Classify using Random Forest
 
 end = time.time()
-print(f"Total time: {end - begin:.2f} seconds = {(end - begin) / 60:.2f} minutes")
+print(f"Total time: {(end - begin) / 60:.2f} minutes")
 
+#
 # # train and evaluate the classification model -
 # num_features = (len(features[0]),)
 # model = cf.create_model(num_features, n_classes)
 # trained_model, X_val, y_val = cf.train_model(model, features, X, n_classes)
 # cf.evaluate_model(trained_model, X_val, y_val)
+
+
 

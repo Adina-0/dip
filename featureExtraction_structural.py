@@ -9,10 +9,6 @@ from scipy.ndimage import label
 from skimage import feature
 import matplotlib.pyplot as plt
 
-
-import numpy as np
-import cv2
-
 def grey_level_co_occurrence_matrix(img, mask, grey_levels=128):
     # Convert the image to grayscale
     if len(img.shape) == 3:
@@ -23,7 +19,7 @@ def grey_level_co_occurrence_matrix(img, mask, grey_levels=128):
     # Scale the image to the specified grey levels
     img_scaled = (img_gray * (grey_levels - 1) / 255).astype(np.uint8)
 
-    # Mask the image to exclude background pixels
+    # Mask the image to exclude background pixels (both adjacent pixels must be non-zero)
     valid_mask = (mask[:-1, :-1] != 0) & (mask[1:, 1:] != 0)
     row_vals = img_scaled[:-1, :-1][valid_mask]
     col_vals = img_scaled[1:, 1:][valid_mask]
@@ -141,40 +137,46 @@ def homogeneity(glcm):
     return homogeneity
 
 
-def relative_areas_and_objects(img, thresholds=None):
+def objects_and_areas(img, mask=None):
     """
-    Calculate relative areas and relative objects for an image at given thresholds.
+    Calculate number of objects, mean and std of their area for a given greyscale image.
 
     Parameters:
-    image (ndarray): color image in gray scale.
-    thresholds (list): List of threshold values.
+    image (ndarray): gray scale image.
+    mask (ndarray): binary mask of area to be considered.
 
     Returns:
-    dict: A dictionary with thresholds as keys and (relative_area, relative_objects) as values.
+    number of objects, mean area of objects, variance of area of objects
     """
-    if thresholds is None:
-        thresholds = [0.1, 0.2, 0.3, 0.4, 0.5]
-    results = {}
+    obj_and_areas = {}
 
-    # img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    # img_gray = cv2.GaussianBlur(img_gray, (5, 5), 0)
+    img[np.isnan(img)] = 0 # set NaN values to 0
+    img = (img - np.min(img)) / (np.max(img) - np.min(img)) # normalize image
 
+    thresholds = [0.3, 0.5, 0.7]
     for threshold in thresholds:
-        # Binarize the image
-        _, img_binary = cv2.threshold(img, 255 * threshold, 255, cv2.THRESH_BINARY)
+        _, img_binary = cv2.threshold(1-img, threshold, 1, cv2.THRESH_BINARY)
+        img_binary = np.where(mask, img_binary, 0)
 
-        # Calculate relative area (fraction of pixels with value 1)
-        relative_area = np.sum(img_binary) / img_binary.size
+        # plt.imshow(img, cmap="gray")
+        # plt.show()
+        #
+        # plt.imshow(img_binary, cmap="gray")
+        # plt.show()
 
         # Calculate relative objects (number of connected components)
         _, num_objects = label(img_binary)
 
-        results[threshold] = (relative_area, num_objects)
+        # Calculate mean area of objects (pixels with value 1)
+        area_mean = np.sum(img_binary) / num_objects
 
-    return results
+        obj_and_areas[f"LBP: Objects (thresh={threshold})"] = num_objects
+        obj_and_areas[f"LBP: Mean Area (thresh={threshold})"] = area_mean
+
+    return obj_and_areas
 
 
-def lbp_features(img, radius=5, points=None, method="uniform", mask=None, plot=False):
+def lbp_features(img, radius=3, points=None, method="uniform", mask=None, plot=False):
     """
     Compute Local Binary Pattern (LBP) features of an image.
 
@@ -207,10 +209,29 @@ def lbp_features(img, radius=5, points=None, method="uniform", mask=None, plot=F
     # Compute LBP
     lbp = feature.local_binary_pattern(img_gray, points, radius, method=method)
 
-    # Apply mask if provided
-    if mask is not None:
-        lbp = np.where(mask, lbp, np.nan)  # Masked regions set to NaN
+    # # Adjust the mask to account for valid neighbors
+    # if mask is not None:
+    #     # Initialize the valid mask with the shape of the input image
+    #     valid_mask = np.ones_like(mask, dtype=bool)
+    #
+    #     # Iterate over every pixel in the image
+    #     for i in range(radius, img_gray.shape[0] - radius):
+    #         for j in range(radius, img_gray.shape[1] - radius):
+    #             # Get the neighborhood of the current pixel within the radius
+    #             neighborhood = mask[i - radius:i + radius + 1, j - radius:j + radius + 1]
+    #
+    #             # Check if all neighboring pixels are valid (i.e., part of the mask)
+    #             if np.all(neighborhood):  # All neighbors should be valid (True)
+    #                 valid_mask[i, j] = True
+    #             else:
+    #                 valid_mask[i, j] = False
+    #
+    #     # Apply the valid mask to LBP (invalid regions set to NaN)
+    #     lbp = np.where(valid_mask, lbp, np.nan)
 
+    lbp = np.where(mask, lbp, np.nan)
+
+    # Plot the results
     if plot is True:
         fig, ax = plt.subplots(1, 2, figsize=(12, 6))
         ax[0].axis("off")
@@ -230,7 +251,7 @@ def lbp_features(img, radius=5, points=None, method="uniform", mask=None, plot=F
     hist = hist.astype("float")
     hist /= (hist.sum() + 1e-7)  # Avoid division by zero
 
-    return hist
+    return lbp, hist
 
 
 def gabor_mean(img, mask, plot=False):
@@ -275,12 +296,17 @@ def fourier_mean(masked_img, mask, plot=False):
     gaussian_window = np.exp(-(x ** 2 + y ** 2) / 0.1)
     windowed_image = img_gray * mask * gaussian_window
 
+    # Normalize the windowed image by the area of the mask
+    # Avoid division by zero by adding a small epsilon
+    mask_area = np.sum(mask)  # Total number of 1s in the mask
+    windowed_image_normalized = windowed_image / (mask_area + 1e-7)
+
     # Perform FFT on the masked image
     f_shift = np.fft.fftshift(np.fft.fft2(img_gray))  # Shift zero-frequency component to the center
     psd_spectrum = np.log(np.abs(f_shift) ** 2)
 
     # Perform FFT on the windowed image
-    f_windowed = np.fft.fftshift(np.fft.fft2(windowed_image))
+    f_windowed = np.fft.fftshift(np.fft.fft2(windowed_image_normalized))
     psd_spectrum_windowed = np.log1p(np.abs(f_windowed) ** 2)
 
     # Frequency axis values
@@ -301,32 +327,32 @@ def fourier_mean(masked_img, mask, plot=False):
 def structural_features(img, mask, plot_bool=False):
 
     grayscale = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    enhanced = cv2.equalizeHist(grayscale)
-    denoised = cv2.GaussianBlur(enhanced, (5, 5), 0)
+    denoised = cv2.GaussianBlur(grayscale, (5, 5), 0)
+    enhanced = cv2.equalizeHist(denoised)
 
     if plot_bool:
-        plot_preprocessing(grayscale, enhanced, denoised)
+        plot_preprocessing(grayscale, denoised, enhanced)
     # Compute the grey-level co-occurrence matrix
-    glcm = grey_level_co_occurrence_matrix(denoised, mask)
+    glcm = grey_level_co_occurrence_matrix(grayscale, mask)
 
     contrast_val = contrast(glcm)
     correlation_val = correlation(glcm)
     energy_val = energy(glcm)
     entropy_val = entropy(img, mask)
     homogeneity_val = homogeneity(glcm)
-    relative_areas_and_objects_val = relative_areas_and_objects(denoised)
 
-    gabor_mean_val = gabor_mean(denoised, mask, plot=plot_bool)
-    fourier_mean_val = fourier_mean(denoised, mask, plot=plot_bool)
+    gabor_mean_val = gabor_mean(enhanced, mask, plot=plot_bool)
+    fourier_mean_val = fourier_mean(enhanced, mask, plot=plot_bool)
 
-    lpb_hist = lbp_features(denoised, mask=mask, plot=plot_bool)
-    lpb_descriptors = {**{f"LBP {key}": value for key, value in utils.central_tendency(lpb_hist).items()},
-                       **{f"LBP {key}": value for key, value in utils.dispersion(lpb_hist).items()},
-                       **{f"LBP {key}": value for key, value in utils.distribution_shape(lpb_hist).items()},
-                       **{f"LBP {key}": value for key, value in utils.range_values(lpb_hist).items()},
-                       **{f"LBP {key}": value for key, value in utils.entropy(lpb_hist).items()}}
+    lbp_img, lbp_hist = lbp_features(enhanced, mask=mask, plot=plot_bool)
+    lpb_descriptors = {**{f"LBP {key}": value for key, value in utils.central_tendency(lbp_hist).items()},
+                       **{f"LBP {key}": value for key, value in utils.dispersion(lbp_hist).items()},
+                       **{f"LBP {key}": value for key, value in utils.distribution_shape(lbp_hist).items()},
+                       **{f"LBP {key}": value for key, value in utils.range_values(lbp_hist).items()},
+                       **{f"LBP {key}": value for key, value in utils.entropy(lbp_hist).items()}}
 
-    # excluded for now: "Relative Areas and Objects": relative_areas_and_objects_val
+    lbp_obj_and_areas = objects_and_areas(lbp_img, mask) # future work: include variance of area (needs more complex calculation)
+
     return {"Contrast": contrast_val, "Correlation": correlation_val, "Energy": energy_val,
             "Homogeneity": homogeneity_val, "Gabor Mean": gabor_mean_val,
             "Fourier Mean": fourier_mean_val} | entropy_val | lpb_descriptors
@@ -366,7 +392,7 @@ def plot_fourier(img_gray, windowed_image, psd_spectrum, psd_spectrum_windowed, 
     plt.show()
 
 
-def plot_preprocessing(grayscale, enhanced, denoised):
+def plot_preprocessing(grayscale, denoised, enhanced):
     plt.figure(figsize=(12, 4))
 
     plt.subplot(1, 3, 1)
@@ -375,13 +401,13 @@ def plot_preprocessing(grayscale, enhanced, denoised):
     plt.axis('off')
 
     plt.subplot(1, 3, 2)
-    plt.imshow(enhanced, cmap='gray')
-    plt.title('Enhanced Image')
+    plt.imshow(denoised, cmap='gray')
+    plt.title('Denoised Image')
     plt.axis('off')
 
     plt.subplot(1, 3, 3)
-    plt.imshow(denoised, cmap='gray')
-    plt.title('Denoised Image')
+    plt.imshow(enhanced, cmap='gray')
+    plt.title('Enhanced Image')
     plt.axis('off')
 
     plt.tight_layout()
