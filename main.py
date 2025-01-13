@@ -22,8 +22,8 @@ include_color = False
 include_geometry = True
 include_structure = False
 
-randomForest = True
-FCNN = True
+inlcude_randomForest = True
+include_FCNN = True
 
 ############################################################################
 # Output paths, set to None if no storage is needed
@@ -131,7 +131,7 @@ end = time.time()
 print(f"Total time to extract features: {(end - begin) / 60:.2f} minutes")
 
 
-if randomForest:
+if inlcude_randomForest:
     begin = time.time()
 
     print("Random Forest:")
@@ -140,7 +140,7 @@ if randomForest:
     end = time.time()
     print(f"Total time for Random Forest: {(end - begin) / 60:.2f} minutes")
 
-if FCNN:
+if include_FCNN:
     begin = time.time()
 
     print("FCNN:")
@@ -151,12 +151,15 @@ if FCNN:
 
     # get number of columns
     num_features = (features.shape[1],)
+
+    # Create and train the FCNN model
     model = cf.create_model(num_features, n_classes)
     trained_model, X_val, y_val = cf.train_model(model, features, X, n_classes)
+
+    end = time.time()
+    print(f"Total time for include_FCNN training: {(end - begin) / 60:.2f} minutes")
+
     cf.evaluate_model(trained_model, X_val, y_val, feature_names)
 
     end = time.time()
-    print(f"Total time for FCNN: {(end - begin) / 60:.2f} minutes")
-
-
-
+    print(f"Total time for include_FCNN including SHAP analysis: {(end - begin) / 60:.2f} minutes")

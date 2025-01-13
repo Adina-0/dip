@@ -118,7 +118,7 @@ def shap_analysis(model, X_val, feature_names):
 
     # reduce data size using K-means clustering
     n_samples = X_val.shape[0]
-    n_clusters = min(100, n_samples)  # Use max 100 clusters
+    n_clusters = min(50, n_samples)  # Use max 100 clusters
 
     # Reduce data size using K-means clustering
     X_val_summary = shap.kmeans(X_val, n_clusters)
