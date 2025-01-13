@@ -2,7 +2,7 @@ import cv2 as cv
 import numpy as np
 import os
 
-from matplotlib import pyplot as plt
+# from matplotlib import pyplot as plt
 
 
 def pad_image(image, max_dim):

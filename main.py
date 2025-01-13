@@ -120,6 +120,12 @@ utils.write_csv_stats(descriptor_stats, output_featureStats)
 
 df_allData.to_csv(output_allFeatures) # Write all features to a CSV file
 
+# for further processing, drop all rows with nan values
+df_cleaned = df_allData.dropna()
+rows_deleted = df_allData.shape[0] - df_cleaned.shape[0]
+print(f"Deleted {rows_deleted} rows with NaN values")
+df_allData = df_cleaned
+
 end = time.time()
 print(f"Total time to extract features: {(end - begin) / 60:.2f} minutes")
 
