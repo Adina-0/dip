@@ -3,18 +3,20 @@
 
 import utils
 import time
+import os
+import warnings
+import pandas as pd
+
 import feature_performance as fp
-import pre_processing as ppM
+import pre_processing_old as pp
 import featureExtraction_structural as fs
 import featureExtraction_color as fc
 import featureExtraction_geometrical as fg
-import pandas as pd
 import classification_features as cf
-import os
-import warnings
+
 
 # Path to input folders containing pollen training data
-data_path = "./All Data/"
+data_path = "./Data/"
 output_identifier = "test"
 
 # Features to include
@@ -29,7 +31,7 @@ include_FCNN = True
 # Output paths, set to None if no storage is needed
 output_allFeatures = f"./Results/{output_identifier}_allFeatures.csv"
 output_featureStats = f"./Results/{output_identifier}_featureStats.csv"
-output_model = f"./Results/{output_identifier}_RF"  # creates two files: '{output_model}_model.joblib' and '{output_model}_feature-names.joblib'
+output_model = f"./Results/{output_identifier}_RF"  # creates three files: '{output_model}_model.joblib', '{output_model}_metadata.joblib' and '{output_model}_label-encoder.joblib'
 
 # Flags for plotting and padding
 plot_bool = False
@@ -42,15 +44,12 @@ warnings.filterwarnings("ignore", category=RuntimeWarning, message=".*invalid va
 begin = time.time()
 
 print("Find global max dim")
-max_dim = ppM.find_global_max_dimension(data_path)
+max_dim = pp.find_global_max_dimension(data_path)
 print("done")
 
 # Paths to folders containing pollen images
 img_folders = os.listdir(data_path)
 n_classes = len(img_folders)
-
-# features = ()
-# X = ()
 
 # Dictionary to store all data
 all_data = {}  # {class_name: {descriptor_name: [values per image]}}
@@ -77,7 +76,8 @@ for class_index, img_folder in enumerate(img_folders):
         print(img_path)
         path = os.path.join(img_folder, img_path)
 
-        img_preprocessed, binary_mask, largest_contour, binary_image = ppM.process_image_to_black_background(path, max_dim, pad=pad_bool)
+        img_preprocessed, binary_mask, largest_contour, binary_image = pp.process_image_to_black_background(path, max_dim, pad=pad_bool)
+
         # cv2.imshow("Test", img_preprocessed)
         # cv2.waitKey(0)
         # cv2.destroyAllWindows()
@@ -93,13 +93,6 @@ for class_index, img_folder in enumerate(img_folders):
             features_color = fc.color_descriptors(img_preprocessed, binary_mask)
         if include_geometry:
             features_geometric = fg.geometric_features(img_preprocessed, binary_mask, largest_contour, binary_image)
-
-        # # Combine structural, color and geometric features into a single vector for CNN
-        # feature_vector = list(features_structure.values()) + list(features_color.values()) + list(features_geometric.values())
-        # flattened_feature_vector = utils.flatten_vector(feature_vector)
-        # # Add the processed feature vector to features
-        # features += (flattened_feature_vector,)
-        # X += (class_index,)
 
         feature_dict = {**features_structure, **features_color, **features_geometric}
 

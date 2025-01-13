@@ -8,6 +8,17 @@ from joblib import load
 from sklearn.preprocessing import LabelEncoder
 
 
+# path to the image to be tested
+image_path = './Test/ageratum.png'
+species_name = '1.Ageratum'
+model_path = './Results/20250109_onlyStrucutre_RF'
+
+# -----------------------------------------------------------------------------------------------------------------------
+
+rf = model_path + '_model.joblib'
+le = model_path + '_label-encoder.joblib'
+md = model_path + '_metadata.joblib'
+
 def calculate_features(img_path: str, species: str):
     # test the model on a new image
     (img_preprocessed,
@@ -60,15 +71,6 @@ def classify(trained_model: str | RandomForestClassifier, label_encoder: str | L
 
     return prediction_label
 
-
-# path to the image to be tested
-image_path = './Test/ageratum.png'
-species_name = '1.Ageratum'
-model_path = './Results/20250109_onlyStrucutre_RF'
-
-rf = model_path + '_model.joblib'
-le = model_path + '_label-encoder.joblib'
-md = model_path + '_metadata.joblib'
 
 feature_df = calculate_features(image_path, species_name)
 predicted_species = classify(rf, le, md, feature_df)
