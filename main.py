@@ -18,9 +18,9 @@ data_path = "./All Data/"
 output_identifier = "test"
 
 # Features to include
-include_color = False
+include_color = True
 include_geometry = True
-include_structure = False
+include_structure = True
 
 inlcude_randomForest = True
 include_FCNN = True
