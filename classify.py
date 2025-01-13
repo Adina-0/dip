@@ -8,9 +8,11 @@ from joblib import load
 from sklearn.preprocessing import LabelEncoder
 
 
-# path to the image to be tested
+# path to the image to be classified
 image_path = './Test/ageratum.png'
-species_name = '1.Ageratum'
+real_species_name = ''  # real species name if for testing purposes
+
+# path to the Random Forest Model and Metadata
 model_path = './Results/20250109_onlyStrucutre_RF'
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -72,8 +74,8 @@ def classify(trained_model: str | RandomForestClassifier, label_encoder: str | L
     return prediction_label
 
 
-feature_df = calculate_features(image_path, species_name)
+feature_df = calculate_features(image_path, real_species_name)
 predicted_species = classify(rf, le, md, feature_df)
 
-print(f"Real species: {species_name}")
+print(f"Real species: {real_species_name}")
 print(f"Predicted species: {predicted_species}")

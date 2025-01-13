@@ -33,6 +33,9 @@ def train_model(model, X, y, n_classes):
     y = le.fit_transform(y)
     y = tf.keras.utils.to_categorical(y, num_classes=n_classes)
 
+    # Create a dictionary with index -> class name mapping
+    class_index_mapping = {index: class_name for index, class_name in enumerate(le.classes_)}
+
     # split into training and validation
     X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
 
@@ -66,7 +69,7 @@ def train_model(model, X, y, n_classes):
     plt.ylabel('Loss')
     plt.show()
 
-    return model, X_val, y_val
+    return model, X_val, y_val, class_index_mapping
 
 # Feature importance from weights
 def analyze_weights(model):
@@ -111,7 +114,7 @@ def permutation_importance_analysis(model, X_val, y_val):
     return importances
 
 # SHAP analysis
-def shap_analysis(model, X_val, feature_names):
+def shap_analysis(model, X_val, feature_names, class_index_mapping=None):
     # # for debugging only!
     # predictions = model.predict(X_val)
     # print(f"Predictions shape: {predictions.shape}")
@@ -145,10 +148,20 @@ def shap_analysis(model, X_val, feature_names):
     # Generate summary plot
     shap.summary_plot(shap_values_mean, reduced_X_val, feature_names=feature_names)
 
+    # # Generate individual SHAP plots for each class
+    # num_classes = shap_values.shape[2]
+    # for i in range(num_classes):
+    #     class_shap_values = shap_values[:, :, i]  # Get SHAP values for the i-th class
+    #     plt.figure(figsize=(10, 6))
+    #     shap.summary_plot(class_shap_values, reduced_X_val, feature_names=feature_names)
+    #     plt.title(f'SHAP Summary Plot for Class {class_index_mapping[i]}')
+    #     plt.tight_layout()
+    #     plt.show()
+
 
 
 # Evaluate the model and visualize feature importance
-def evaluate_model(trained_model, X_val, y_val, feature_names):
+def evaluate_model(trained_model, X_val, y_val, feature_names, class_index_mapping):
 
     ## model is not linear, so weights-based feature importance is not meaningful
     # # Weight-based feature importance
@@ -180,4 +193,4 @@ def evaluate_model(trained_model, X_val, y_val, feature_names):
     plt.show()
 
     # SHAP analysis
-    shap_analysis(trained_model, X_val, feature_names)
+    shap_analysis(trained_model, X_val, feature_names, class_index_mapping)
