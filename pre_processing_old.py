@@ -110,25 +110,25 @@ def process_image_to_black_background(image_path, max_dim=None, pad=False):
     if largest_contour is not None:
         cv.drawContours(contour_image, [largest_contour], -1, (0, 255, 0), thickness=5)
 
-    # plot all
-    fig = plt.figure(figsize=(15, 15))
-    ax1 = fig.add_subplot(221)
-    ax1.imshow(cv.cvtColor(contour_image, cv.COLOR_BGR2RGB))  # Display the image with the contour drawn on it
-    ax1.set_title('Contour')
-
-    ax2 = fig.add_subplot(222)
-    ax2.imshow(mask, cmap='gray')  # Display mask
-    ax2.set_title('Mask')
-
-    ax3 = fig.add_subplot(223)
-    ax3.imshow(cv.cvtColor(background_black, cv.COLOR_BGR2RGB))  # Display background with blacked-out areas
-    ax3.set_title('Background Black')
-
-    ax4 = fig.add_subplot(224)
-    ax4.imshow(binary_image, cmap='gray')  # Display binary image
-    ax4.set_title('Binary Image')
-
-    plt.show()
+    # # plot all
+    # fig = plt.figure(figsize=(15, 15))
+    # ax1 = fig.add_subplot(221)
+    # ax1.imshow(cv.cvtColor(contour_image, cv.COLOR_BGR2RGB))  # Display the image with the contour drawn on it
+    # ax1.set_title('Contour')
+    #
+    # ax2 = fig.add_subplot(222)
+    # ax2.imshow(mask, cmap='gray')  # Display mask
+    # ax2.set_title('Mask')
+    #
+    # ax3 = fig.add_subplot(223)
+    # ax3.imshow(cv.cvtColor(background_black, cv.COLOR_BGR2RGB))  # Display background with blacked-out areas
+    # ax3.set_title('Background Black')
+    #
+    # ax4 = fig.add_subplot(224)
+    # ax4.imshow(binary_image, cmap='gray')  # Display binary image
+    # ax4.set_title('Binary Image')
+    #
+    # plt.show()
 
     return background_black, mask, largest_contour, binary_image
 
