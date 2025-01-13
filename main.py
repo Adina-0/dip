@@ -15,12 +15,15 @@ import warnings
 
 # Path to input folders containing pollen training data
 data_path = "./All Data/"
-output_identifier = "20250109"
+output_identifier = "test"
 
 # Features to include
 include_color = False
-include_geometry = False
-include_structure = True
+include_geometry = True
+include_structure = False
+
+randomForest = True
+FCNN = True
 
 ############################################################################
 # Output paths, set to None if no storage is needed
@@ -46,8 +49,8 @@ print("done")
 img_folders = os.listdir(data_path)
 n_classes = len(img_folders)
 
-features = ()
-X = ()
+# features = ()
+# X = ()
 
 # Dictionary to store all data
 all_data = {}  # {class_name: {descriptor_name: [values per image]}}
@@ -123,17 +126,37 @@ descriptor_stats = utils.calculate_descriptor_stats(all_data)
 utils.write_csv_stats(descriptor_stats, output_featureStats)
 
 df_allData.to_csv(output_allFeatures) # Write all features to a CSV file
-rf = fp.analyze_feature_performance(df_allData, output_model) # Classify using Random Forest
 
 end = time.time()
-print(f"Total time: {(end - begin) / 60:.2f} minutes")
+print(f"Total time to extract features: {(end - begin) / 60:.2f} minutes")
 
-#
-# # train and evaluate the classification model -
-# num_features = (len(features[0]),)
-# model = cf.create_model(num_features, n_classes)
-# trained_model, X_val, y_val = cf.train_model(model, features, X, n_classes)
-# cf.evaluate_model(trained_model, X_val, y_val)
+
+if randomForest:
+    begin = time.time()
+
+    print("Random Forest:")
+    rf = fp.analyze_feature_performance(df_allData, output_model) # Classify using Random Forest
+
+    end = time.time()
+    print(f"Total time for Random Forest: {(end - begin) / 60:.2f} minutes")
+
+if FCNN:
+    begin = time.time()
+
+    print("FCNN:")
+    # train and evaluate the classification model -
+    features = df_allData.drop(columns=['Class'])
+    X = df_allData['Class']
+    feature_names = features.columns.tolist()  # Save feature names as a list for plots
+
+    # get number of columns
+    num_features = (features.shape[1],)
+    model = cf.create_model(num_features, n_classes)
+    trained_model, X_val, y_val = cf.train_model(model, features, X, n_classes)
+    cf.evaluate_model(trained_model, X_val, y_val, feature_names)
+
+    end = time.time()
+    print(f"Total time for FCNN: {(end - begin) / 60:.2f} minutes")
 
 
 
