@@ -1,6 +1,6 @@
 # extract structural features from the pollen images to be used in the classification task
 # proposed features: contrast, correlation, energy, entropy, homogeneity, relative areas and objects
-# following the paper: M. del Pozo-Baños, et al., Features extraction techniques for pollen grain classification, Neurocomputing (2014), http://dx.doi.org/10.1016/j.neucom.2014.05.085i
+# choice of features following the paper: M. del Pozo-Baños, et al., Features extraction techniques for pollen grain classification, Neurocomputing (2014), http://dx.doi.org/10.1016/j.neucom.2014.05.085i
 
 import numpy as np
 import cv2

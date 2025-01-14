@@ -17,12 +17,12 @@ import classification_FCNN as cf
 
 # Path to input folders containing pollen training data
 data_path = "./Data/"
-output_identifier = "test"
+output_identifier = "20250113"
 
 # Features to include
-include_color = False
+include_color = True
 include_geometry = True
-include_structure = False
+include_structure = True
 
 inlcude_randomForest = True
 include_FCNN = True
