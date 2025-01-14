@@ -7,12 +7,12 @@ import os
 import warnings
 import pandas as pd
 
-import feature_performance as fp
-import pre_processing_old as pp
+import classification_RF as fp
+import pre_processing as pp
 import featureExtraction_structural as fs
 import featureExtraction_color as fc
 import featureExtraction_geometrical as fg
-import classification_features as cf
+import classification_FCNN as cf
 
 
 # Path to input folders containing pollen training data
@@ -20,9 +20,9 @@ data_path = "./Data/"
 output_identifier = "test"
 
 # Features to include
-include_color = True
+include_color = False
 include_geometry = True
-include_structure = True
+include_structure = False
 
 inlcude_randomForest = True
 include_FCNN = True
