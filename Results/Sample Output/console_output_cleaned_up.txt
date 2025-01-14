@@ -1,0 +1,73 @@
+
+Random Forest:
+                      precision    recall  f1-score   support
+
+          1.Ageratum       0.97      1.00      0.99        73
+      10.Crown_Daisy       1.00      0.99      0.99        80
+         2. Marigold       1.00      1.00      1.00        95
+     3.Peach_Blossom       1.00      0.89      0.94        46
+     4.Bougainvillea       0.98      0.97      0.98       109
+              5.Rose       0.72      0.89      0.80        53
+            6.Pomelo       0.99      0.96      0.97        80
+      7.Crepe_Myrtle       0.96      0.92      0.94        75
+         8.Areca_Nut       0.82      0.91      0.86        58
+9.Millettia_Speciosa       0.95      0.66      0.78        29
+
+            accuracy                           0.94       698
+           macro avg       0.94      0.92      0.92       698
+        weighted avg       0.95      0.94      0.94       698
+
+
+
+FCNN:
+
+Epoch 1/50
+59/59 ━━━━━━━━━━━━━━━━━━━━ 1s 2ms/step - accuracy: 0.4690 - loss: 1.7191 - val_accuracy: 0.8798 - val_loss: 0.4965
+Epoch 2/50
+59/59 ━━━━━━━━━━━━━━━━━━━━ 0s 1ms/step - accuracy: 0.8536 - loss: 0.5650 - val_accuracy: 0.9163 - val_loss: 0.2703
+Epoch 3/50
+59/59 ━━━━━━━━━━━━━━━━━━━━ 0s 1ms/step - accuracy: 0.9054 - loss: 0.3391 - val_accuracy: 0.9292 - val_loss: 0.2157
+Epoch 4/50
+59/59 ━━━━━━━━━━━━━━━━━━━━ 0s 967us/step - accuracy: 0.9260 - loss: 0.3035 - val_accuracy: 0.9356 - val_loss: 0.1870
+Epoch 5/50
+59/59 ━━━━━━━━━━━━━━━━━━━━ 0s 997us/step - accuracy: 0.9342 - loss: 0.2525 - val_accuracy: 0.9335 - val_loss: 0.1819
+Epoch 6/50
+59/59 ━━━━━━━━━━━━━━━━━━━━ 0s 1ms/step - accuracy: 0.9152 - loss: 0.2721 - val_accuracy: 0.9442 - val_loss: 0.1606
+Epoch 7/50
+59/59 ━━━━━━━━━━━━━━━━━━━━ 0s 959us/step - accuracy: 0.9424 - loss: 0.2020 - val_accuracy: 0.9485 - val_loss: 0.1557
+Epoch 8/50
+59/59 ━━━━━━━━━━━━━━━━━━━━ 0s 969us/step - accuracy: 0.9420 - loss: 0.2022 - val_accuracy: 0.9485 - val_loss: 0.1528
+Epoch 9/50
+59/59 ━━━━━━━━━━━━━━━━━━━━ 0s 954us/step - accuracy: 0.9521 - loss: 0.1755 - val_accuracy: 0.9549 - val_loss: 0.1389
+Epoch 10/50
+59/59 ━━━━━━━━━━━━━━━━━━━━ 0s 1ms/step - accuracy: 0.9463 - loss: 0.2000 - val_accuracy: 0.9549 - val_loss: 0.1395
+Epoch 11/50
+59/59 ━━━━━━━━━━━━━━━━━━━━ 0s 1ms/step - accuracy: 0.9445 - loss: 0.1951 - val_accuracy: 0.9549 - val_loss: 0.1274
+Epoch 12/50
+59/59 ━━━━━━━━━━━━━━━━━━━━ 0s 928us/step - accuracy: 0.9564 - loss: 0.1420 - val_accuracy: 0.9528 - val_loss: 0.1370
+Epoch 13/50
+59/59 ━━━━━━━━━━━━━━━━━━━━ 0s 912us/step - accuracy: 0.9532 - loss: 0.1567 - val_accuracy: 0.9549 - val_loss: 0.1311
+Epoch 14/50
+59/59 ━━━━━━━━━━━━━━━━━━━━ 0s 1ms/step - accuracy: 0.9667 - loss: 0.1300 - val_accuracy: 0.9528 - val_loss: 0.1192
+Epoch 15/50
+59/59 ━━━━━━━━━━━━━━━━━━━━ 0s 995us/step - accuracy: 0.9628 - loss: 0.1330 - val_accuracy: 0.9592 - val_loss: 0.1222
+Epoch 16/50
+59/59 ━━━━━━━━━━━━━━━━━━━━ 0s 928us/step - accuracy: 0.9567 - loss: 0.1637 - val_accuracy: 0.9635 - val_loss: 0.1151
+Epoch 17/50
+59/59 ━━━━━━━━━━━━━━━━━━━━ 0s 1ms/step - accuracy: 0.9696 - loss: 0.1294 - val_accuracy: 0.9614 - val_loss: 0.1137
+Epoch 18/50
+59/59 ━━━━━━━━━━━━━━━━━━━━ 0s 936us/step - accuracy: 0.9556 - loss: 0.1356 - val_accuracy: 0.9657 - val_loss: 0.1182
+Epoch 19/50
+59/59 ━━━━━━━━━━━━━━━━━━━━ 0s 934us/step - accuracy: 0.9679 - loss: 0.1088 - val_accuracy: 0.9592 - val_loss: 0.1277
+Epoch 20/50
+59/59 ━━━━━━━━━━━━━━━━━━━━ 0s 934us/step - accuracy: 0.9648 - loss: 0.1170 - val_accuracy: 0.9571 - val_loss: 0.1269
+Epoch 21/50
+59/59 ━━━━━━━━━━━━━━━━━━━━ 0s 993us/step - accuracy: 0.9655 - loss: 0.1158 - val_accuracy: 0.9571 - val_loss: 0.1158
+Epoch 22/50
+59/59 ━━━━━━━━━━━━━━━━━━━━ 0s 989us/step - accuracy: 0.9673 - loss: 0.1225 - val_accuracy: 0.9592 - val_loss: 0.1177
+15/15 ━━━━━━━━━━━━━━━━━━━━ 0s 814us/step - accuracy: 0.9680 - loss: 0.1103
+Validation Accuracy: 96.14%
+15/15 ━━━━━━━━━━━━━━━━━━━━ 0s 800us/step - accuracy: 0.9680 - loss: 0.1103
+
+
+Validation Accuracy: 96.14%
